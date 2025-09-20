@@ -13,6 +13,17 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	"d1_databases": [
+		{
+		"binding": "DB",
+		"database_name": "workers-api",
+		"database_id": "7473a062-eb13-4dc8-bcc3-6960fc2fe576",
+		}
+  	],
+	"vars": { 
+		"open_register": 1,
+		"jwt_secret": "workers-api" 
 	}
 	/**
 	 * Smart Placement
