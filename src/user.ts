@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { decode, sign, verify } from 'hono/jwt'
 import { createMiddleware } from 'hono/factory'
-
+type Variables = {
+  role: string
+}
 export const user = new Hono<{ Bindings: CloudflareBindings }>();
 
 export const jwt_verify = createMiddleware(async (c, next) => {
@@ -10,7 +12,8 @@ export const jwt_verify = createMiddleware(async (c, next) => {
     return c.json({code:500,msg:'未登录'})
   }
   try{
-    await verify(token,c.env.jwt_secret)
+    const payload = await verify(token,c.env.jwt_secret)
+    c.set("role",payload.role)
     await next()
   }catch(error){
     return c.json({code:500,'msg':'token已过期,请重新登陆'})
@@ -35,6 +38,7 @@ user.post("/login", async (c) => {
     await c.env.DB.prepare("update t_user set last_time=? where id=?").bind(Date.now(),results.id).run()
     const payload = {
       exp: Math.floor(Date.now() / 1000) + 3600 * 24, // Token expires in 30 minutes
+      role: results.role
     }
     const token = await sign(payload, c.env.jwt_secret)
 
@@ -52,7 +56,7 @@ user.post("/register", async (c) => {
         return c.json({code:500,msg:"注册功能未开启"})
     }
     try{
-        await c.env.DB.exec(`insert into t_user(username,password,rule) values ('${username}','${password}','user')`)
+        await c.env.DB.exec(`insert into t_user(username,password,role) values ('${username}','${password}','user')`)
     }catch(e){
         return c.json({code:500,msg:"用户名已存在"})
     }
