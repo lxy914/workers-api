@@ -1,4 +1,4 @@
-DROP TABLE t_user;
+drop table if exists t_user;
 create table t_user (
   id integer primary key,
   username text unique,
@@ -6,4 +6,4 @@ create table t_user (
   role text,
   last_time integer
 );
-INSERT INTO t_user VALUES(1,'admin','qwertyuiop','admin',0);
+insert into t_user values(1,'admin','qwertyuiop','admin',0);
