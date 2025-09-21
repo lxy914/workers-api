@@ -22,7 +22,7 @@
 		}
   	],
 	"vars": { 
-		"open_register": 1,
+		"open_register": 0,
 		"jwt_secret": "workers-api" 
 	}
 	/**

@@ -1,19 +1,22 @@
 import { Hono } from "hono";
-import {user,jwt_verify} from "./user";
+import { cors } from 'hono/cors'
+import { user, jwt_verify } from "./user";
+import { post } from "./post"
+
 
 type Variables = {
   role: string
 }
 
-const app = new Hono<{ Bindings: CloudflareBindings,Variables:Variables }>();
+const app = new Hono<{ Bindings: CloudflareBindings, Variables: Variables }>();
 
 
-
-app.use("/message/*",jwt_verify)
-app.get("/message", (c) => {
-  const role = c.get("role")
-  return c.text("Hello Hono! "+role);
+app.use('/api/*', cors())
+app.use("/api/post/*", jwt_verify)
+app.get("/", (c) => {
+  return c.text("Hello!");
 });
-app.route("/user",user);
+app.route("/api/user", user);
+app.route("/api/post", post);
 
 export default app;
