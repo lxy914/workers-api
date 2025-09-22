@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,13 +10,14 @@
   <!-- 引入Font Awesome用于图标 -->
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-100 min-h-screen flex items-center justify-center">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold text-center mb-6 text-gray-700">登录账户</h2>
-    
+
     <!-- 错误提示区域 -->
     <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded mb-4"></div>
-    
+
     <!-- 登录表单 -->
     <form id="login-form" class="space-y-4">
       <div>
@@ -24,76 +26,65 @@
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
             <i class="fa fa-user"></i>
           </span>
-          <input 
-            type="text" 
-            id="username" 
-            name="username" 
+          <input type="text" id="username" name="username"
             class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="请输入用户名"
-            required
-          >
+            placeholder="请输入用户名" required>
         </div>
       </div>
-      
+
       <div>
         <label for="password" class="block text-gray-600 mb-1">密码</label>
         <div class="relative">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
             <i class="fa fa-lock"></i>
           </span>
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
+          <input type="password" id="password" name="password"
             class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="请输入密码"
-            required
-          >
+            placeholder="请输入密码" required>
         </div>
       </div>
-      
-      <button 
-        type="submit" 
-        class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-      >
+
+      <button type="submit"
+        class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
         登录
       </button>
     </form>
   </div>
 
   <script>
-  const BASE_URL = '/api';
+    const BASE_URL = '/api';
     // 登录表单提交处理
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault(); // 阻止表单默认提交
-      
+
       // 获取表单数据
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
       const errorElement = document.getElementById('error-message');
-      
+
       // 前端基础验证
       if (!username || !password) {
         errorElement.textContent = '用户名和密码不能为空';
         errorElement.classList.remove('hidden');
         return;
       }
-      
+
       try {
         // 发送登录请求到后端
-        const response = await fetch(BASE_URL+'/user/login', {
+        const response = await fetch(BASE_URL + '/user/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        
+
         const data = await response.json();
-        if (data.code===200){
+        if (data.code === 200) {
           window.localStorage.setItem('token', data.token)
-          alert('登录成功！上次登录时间：'+new Date(data.last_time).toLocaleString())
-        }else {
-            errorElement.textContent = data.msg;
-            errorElement.classList.remove('hidden');
+          alert('登录成功！上次登录时间：' + new Date(data.last_time).toLocaleString())
+          window.location.href = "/post"
+        } else {
+          errorElement.textContent = data.msg;
+          errorElement.classList.remove('hidden');
         }
       } catch (error) {
         errorElement.textContent = '网络错误，请稍后重试';
@@ -102,4 +93,5 @@
     });
   </script>
 </body>
+
 </html>

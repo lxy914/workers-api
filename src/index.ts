@@ -15,6 +15,6 @@ app.use("/api/post/*", jwt_verify)
 
 app.route("/api/user", user);
 app.route("/api/post", post);
-app.route("/",obj)
+app.route("/", obj)
 
 export default app;

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post Management</title>
+  <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+
+</head>
+
+<body>
+
+  <div class="container mt-5">
+    <h1 class="mb-4">Post Management</h1>
+
+    <!-- Form to create a new post -->
+    <form id="createPostForm" class="mb-4">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" class="form-control" id="title" placeholder="Enter title" required>
+      </div>
+      <div class="form-group">
+        <label for="body">Body</label>
+        <textarea class="form-control" id="body" rows="3" placeholder="Enter body" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Create Post</button>
+    </form>
+
+    <!-- Table to display existing posts -->
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Body</th>
+          <th>Update Time</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="postList">
+        <!-- Posts will be dynamically added here -->
+      </tbody>
+    </table>
+    <!-- 添加一个编辑模态框 -->
+    <div class="modal" id="editPostModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Edit Post</h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="editPostForm">
+              <div class="form-group">
+                <label for="editTitle">Title</label>
+                <input type="text" class="form-control" id="editTitle" required>
+              </div>
+              <div class="form-group">
+                <label for="editBody">Body</label>
+                <textarea class="form-control" id="editBody" rows="3" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+  <script>
+    const base_url = "/api";
+
+    function deletePost(id) {
+      $.ajax({
+        url: base_url + `/posts/${id}`,
+        type: 'DELETE',
+        headers: {
+          "Authorization": "Basic " + btoa(username + ":" + password)
+        },
+        success: function () {
+          // Refresh post list after deletion
+          fetchPosts();
+        }
+      });
+    }
+
+    function fetchPosts() {
+      $.ajax({
+        url: base_url + "/post",
+        type: 'GET',
+        headers: {
+          "token": window.localStorage.getItem("token")
+        },
+        success: function (response) {
+          $("#postList").empty();
+          if (response.data) {
+            response.data.forEach(function (post) {
+              // <button class="btn btn-sm btn-danger" onclick=deletePost('${post.id}')>Delete</button>
+              $("#postList").append(
+                `<tr>
+                <td>${post.id}</td>
+                <td>${post.title}</td>
+                <td>${post.body}</td>
+                <td>${new Date(post.update_time).toLocaleString()}</td>
+                <td>
+                  <button class="btn btn-sm btn-info" onclick=openEditModal('${post.id}')>Edit</button>
+                </td>
+              </tr>`
+              );
+            });
+          } else {
+            console.error("Failed to fetch posts");
+          }
+        }
+      });
+    }
+    $(document).ready(function () {
+      fetchPosts();
+      // Function to handle form submission for creating a new post
+      $("#createPostForm").submit(function (event) {
+        event.preventDefault();
+        var title = $("#title").val();
+        var body = $("#body").val().trim();
+        // var body=simplemde.value()
+        $.ajax({
+          url: base_url + "/post",
+          type: 'POST',
+          headers: {
+            token: window.localStorage.getItem("token")
+          },
+          data: JSON.stringify({ title: title, body: body }),
+          success: function (data) {
+            alert("ok")
+            // location.reload();
+            // Clear form fields after successful submission
+            $("#title").val("");
+            $("#body").val("");
+            // Refresh post list
+            fetchPosts();
+          }
+        });
+      });
+    });
+    function openEditModal(id) {
+      $.ajax({
+        url: base_url + "/post/" + id,
+        type: 'GET',
+        headers: {
+          token: window.localStorage.getItem("token")
+        },
+        success: function (response) {
+          const title = response.data.title
+          const body = response.data.body
+          $("#editTitle").val(title);
+          $("#editBody").val(body);
+          // Use data attributes to store post ID
+          $("#editPostModal").data("post-id", id);
+          // Open modal
+          $("#editPostModal").modal("show");
+        }
+      });
+    }
+
+    // Function to handle form submission for editing a post
+    $("#editPostForm").submit(function (event) {
+      event.preventDefault();
+      var id = $("#editPostModal").data("post-id");
+      var title = $("#editTitle").val();
+      var body = $("#editBody").val();
+      $.ajax({
+        url: base_url + "/post/" + id,
+        type: 'PUT',
+        headers: {
+          token: window.localStorage.getItem("token")
+        },
+        data: JSON.stringify({ title: title, body: body }),
+        success: function (response) {
+          if (response.code == 500) {
+            alert(response.msg)
+            return
+          }
+          // Close modal after successful submission
+          $("#editPostModal").modal("hide");
+          // Refresh post list
+          fetchPosts();
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>
