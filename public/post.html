@@ -99,8 +99,11 @@
         },
         success: function (response) {
           $("#postList").empty();
-          if (response.data) {
-            response.data.forEach(function (post) {
+          if(response.code!=200){
+            alert(response.msg)
+            window.location.href="/login"
+          }
+          response.data.forEach(function (post) {
               // <button class="btn btn-sm btn-danger" onclick=deletePost('${post.id}')>Delete</button>
               $("#postList").append(
                 `<tr>
@@ -114,9 +117,6 @@
               </tr>`
               );
             });
-          } else {
-            console.error("Failed to fetch posts");
-          }
         }
       });
     }
