@@ -14,7 +14,7 @@ dist/
 # deps
 node_modules/
 .wrangler
-
+.idea
 # env
 .env
 .env.production

@@ -5,12 +5,9 @@ import { post } from "./post"
 import { obj } from "./durable-object"
 export { Counter } from "./durable-object"
 
-type Variables = {
-  role: string
-}
 
 
-const app = new Hono<{ Bindings: CloudflareBindings, Variables: Variables }>();
+const app = new Hono();
 
 
 app.use('/api/*', cors())

@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import { decode, sign, verify } from 'hono/jwt'
 import { createMiddleware } from 'hono/factory'
-type Variables = {
-  role: string
-}
+
 export const user = new Hono<{ Bindings: CloudflareBindings }>();
 
 export const jwt_verify = createMiddleware(async (c, next) => {
