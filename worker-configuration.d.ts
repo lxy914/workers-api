@@ -10,6 +10,7 @@ declare namespace Cloudflare {
         jwt_secret: string;
 		DB: D1Database;
 		ASSETS: Fetcher;
+        COUNTER: DurableObjectNamespace<Counter>;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}
