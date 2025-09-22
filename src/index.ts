@@ -4,11 +4,8 @@ import { user, jwt_verify } from "./user";
 import { post } from "./post"
 
 
-type Variables = {
-  role: string
-}
 
-const app = new Hono<{ Bindings: CloudflareBindings, Variables: Variables }>();
+const app = new Hono();
 
 
 app.use('/api/*', cors())
