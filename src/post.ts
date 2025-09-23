@@ -28,9 +28,14 @@ post.post('/', async (c) => {
 post.put('/:id', async (c) => {
     const id = c.req.param('id')
     const param = await c.req.json()
-    if (!param.title || !param.body) {
-        return c.json({ code: 500, msg: 'title或body参数不能为空' })
+    if (param.title && param.body) {
+        await c.env.DB.exec(`update t_post set title = '${param.title}', body = '${param.body}',update_time = ${Date.now()} where id=${id}`)
+        // return c.json({ code: 500, msg: 'title或body参数不能同时为空' })
     }
-    await c.env.DB.exec(`update t_post set title = '${param.title}', body = '${param.body}',update_time = ${Date.now()} where id=${id}`)
+    if (param.title){
+        await c.env.DB.exec(`update t_post set title = '${param.title}',update_time = ${Date.now()} where id=${id}`)
+    }else if (param.body) {
+        await c.env.DB.exec(`update t_post set body = '${param.body}',update_time = ${Date.now()} where id=${id}`)
+    }
     return c.json({ code: 200, msg: "操作成功" })
 })
