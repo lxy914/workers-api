@@ -4,31 +4,23 @@
     <meta charset="UTF-8">
     <title>Post</title>
   <link rel="stylesheet" href="/css/webix.min.css" type="text/css">
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-        }
-    </style>
 </head>
 <body>
-<div id="app"></div>
 <script src="/js/webix.min.js" type="text/javascript"></script>
 <script>
     webix.ready(function() {
-        webix.ui({
-            id: "app",
+        const datatable = {
+            id: "mytable",
             view:"datatable",
-            // autoheight:true,
-            minHeight:100,
+            autoheight:true,
+            minHeight:400,
             autowidth:true,
             editable:true,
             editaction:"dblclick",
             scroll:false,
             select:true,
             css:{
-                margin:"200px auto",
+                "font-size": "20px",
             },
             columns: [
                 {id: "id", header: "id", width: 50},
@@ -59,7 +51,69 @@
                 } else {
                     return res.data
                 }
+            },
+            pager:"pager"
+        };
+        var insert_window = {
+            view:"window",
+            id:"insert_window",
+            head:"新增",
+            close:true,
+            position: "center",
+            body: {
+                view:"form",
+                id:"insert_form",
+                elements:[
+                    {view:"text", name:"title", label:"标题"},
+                    {view:"textarea", name:"body",width:300, height:200, label:"内容"},
+                    {view:"button", value:"提交", click:async function () {
+                            const params = this.getParentView().getValues()
+                            const response = await webix.ajax()
+                                .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
+                                .post("/api/post",JSON.stringify(params));
+                            const json = await response.json()
+                            if (json.code !== 200) {
+                                webix.alert(json.msg)
+                                return [];
+                            } else {
+                                this.getParentView().hide();
+                                webix.message("新增成功");
+
+                                const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/post")
+                                const res = await response.json()
+                                if (res.code !== 200) {
+                                    webix.alert(res.msg);
+                                } else {
+                                    $$("mytable").clearAll();
+                                    $$("mytable").parse(res.data);
+                                }
+                            }
+                        }}
+                ]
             }
+        };
+        webix.ui({
+            css:{
+                margin:"50px auto",
+            },
+            width: 1000,
+            rows: [
+                {type: "header", template: "lxy博客"},
+                {
+                    view:"toolbar",
+                    cols:[
+                        {view:"button", value:"新增",width:100, click:function(){webix.ui(insert_window).show()}},
+                    ]
+                },
+                datatable,
+                {
+                    view:"pager",
+                    id:"pager",
+                    size:10,
+                    group:5,
+                    template: "{common.prev()}{common.pages()}{common.next()}"
+                }
+            ]
         });
     })
 </script>
