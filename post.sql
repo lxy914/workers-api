@@ -1,4 +1,4 @@
-
+drop table if exists t_post;
 create table if not exists t_post (
   id integer primary key,
   title text,

@@ -8,53 +8,8 @@
 <body>
 <script src="/js/webix.min.js" type="text/javascript"></script>
 <script>
-    webix.ready(function() {
-        const datatable = {
-            id: "mytable",
-            view:"datatable",
-            autoheight:true,
-            minHeight:400,
-            autowidth:true,
-            editable:true,
-            editaction:"dblclick",
-            scroll:false,
-            select:true,
-            css:{
-                "font-size": "20px",
-            },
-            columns: [
-                {id: "id", header: "id", width: 50},
-                {id: "title", header: "标题", width: 200,editor: "text"},
-                {id: "body", header: "内容", width: 500,editor: "text"},
-                {id: "update_time", header: "创建时间", width: 150, template:function(obj){return new Date(obj.update_time).toLocaleString()}}
-            ],
-            on:{
-                onAfterEditStop: async function (state, editor, ignoreUpdate) {
-                    if (ignoreUpdate) return;
-                    // console.log(`更新后的值:${state.value},更新前的值:${state.old}`);
-                    // console.log(`更的列名:${editor.column},id:${editor.row}`);
-                    const params = {[editor.column]: state.value}
-                    const response = await webix.ajax()
-                        .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
-                        .put("/api/post/"+editor.row,JSON.stringify(params))
-                    const json = await response.json()
-                    if (json.code !== 200) {
-                        webix.alert(json.msg)
-                    }
-                }
-            },
-            url:async function () {
-                const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/post")
-                const res = await response.json()
-                if (res.code !== 200) {
-                    webix.alert(res.msg)
-                } else {
-                    return res.data
-                }
-            },
-            pager:"pager"
-        };
-        var insert_window = {
+    webix.ready(async function() {
+        webix.ui({
             view:"window",
             id:"insert_window",
             head:"新增",
@@ -65,7 +20,7 @@
                 id:"insert_form",
                 elements:[
                     {view:"text", name:"title", label:"标题"},
-                    {view:"textarea", name:"body",width:300, height:200, label:"内容"},
+                    {view:"textarea", name:"body",width:600, height:200, label:"内容"},
                     {view:"button", value:"提交", click:async function () {
                             const params = this.getParentView().getValues()
                             const response = await webix.ajax()
@@ -78,19 +33,96 @@
                             } else {
                                 this.getParentView().hide();
                                 webix.message("新增成功");
-
-                                const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/post")
-                                const res = await response.json()
-                                if (res.code !== 200) {
-                                    webix.alert(res.msg);
-                                } else {
-                                    $$("mytable").clearAll();
-                                    $$("mytable").parse(res.data);
-                                }
+                                loadData()
                             }
                         }}
                 ]
             }
+        });
+        webix.ui({
+            view:"window",
+            id:"edit_window",
+            head:"修改",
+            close:true,
+            position: "center",
+            body: {
+                view:"form",
+                id:"edit_form",
+                elements:[
+                    {view:"text", name:"title", label:"标题"},
+                    {view:"textarea", name:"body",width:600, height:200, label:"内容"},
+                    {view:"button", value:"提交", click:async function () {
+                            var values = this.getParentView().getValues();
+                            const response = await webix.ajax()
+                                .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
+                                .put("/api/post/"+values.id,JSON.stringify({title:values.title,body:values.body}))
+                            const json = await response.json()
+                            if (json.code !== 200) {
+                                webix.alert(json.msg)
+                            }else{
+                                this.getParentView().hide();
+                                webix.message("修改成功");
+                                loadData()
+                            }
+                        }}
+                ]
+            }
+        });
+        webix.ui({
+            view: "window",
+            id: "detail_window",
+            position: "center",
+            head: "文章详情",
+            body: {
+                view: "form",
+                id: "detailForm",
+                elements: [
+                    { view: "text", name: "title", label: "标题", readonly: true },
+                    { view: "textarea", name: "body", label: "内容",width:600, height:200, readonly: true },
+                    {
+                        margin: 10,
+                        cols: [
+                            { view: "button", value: "关闭", click: () => $$("detail_window").hide() }
+                        ]
+                    }
+                ]
+            }
+        });
+        async function loadData() {
+            const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/post")
+            const res = await response.json()
+            if (res.code !== 200) {
+                webix.alert(res.msg);
+            } else {
+                $$("mytable").parse(res.data,"json",true);
+            }
+        }
+        const datatable = {
+            id: "mytable",
+            view:"datatable",
+            autoheight:true,
+            minHeight:400,
+            autowidth:true,
+            scroll:false,
+            select:true,
+            columns: [
+                {id: "id", header: "id", width: 50},
+                {id: "title", header: "标题", width: 200,editor: "text"},
+                {id: "body", header: "内容", width: 500,editor: "text"},
+                {id: "update_time", header: "创建时间", width: 150, template:function(obj){return new Date(obj.update_time).toLocaleString()}}
+            ],
+            on:{
+                onItemDblClick:function (id, e, node){
+                    const item = this.getItem(id);
+                    if (item) {
+                        // 填充表单数据
+                        $$("detailForm").setValues(item);
+                        // 显示详情窗口
+                        $$("detail_window").show();
+                    }
+                }
+            },
+            pager:"pager"
         };
         webix.ui({
             css:{
@@ -98,11 +130,25 @@
             },
             width: 1000,
             rows: [
-                {type: "header", template: "lxy博客"},
+                {type: "header", template: "lxy记录", css: {"font-size":"35px"}},
                 {
                     view:"toolbar",
                     cols:[
-                        {view:"button", value:"新增",width:100, click:function(){webix.ui(insert_window).show()}},
+                        {view:"button", value:"新增",width:100, click:function(){$$("insert_window").show()}},
+                        {
+                            view:"button",
+                            value:"修改",
+                            width:100,
+                            click:function(){
+                                const selected = $$("mytable").getSelectedItem();
+                                if (selected) {
+                                    $$("edit_form").setValues(selected);
+                                    $$("edit_window").show();
+                                } else {
+                                    webix.alert("请选择要修改的行");
+                                }
+                            }
+                        },
                     ]
                 },
                 datatable,
@@ -111,10 +157,11 @@
                     id:"pager",
                     size:10,
                     group:5,
-                    template: "{common.prev()}{common.pages()}{common.next()}"
+                    template: "{common.first()} {common.prev()} {common.pages()} {common.next()} {common.last()}"
                 }
             ]
         });
+        loadData();
     })
 </script>
 </body>
