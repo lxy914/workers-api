@@ -61,6 +61,11 @@ export class ChatRoom extends DurableObject {
       type: 'system',
       message: '欢迎加入聊天房间！当前在线人数: ' + this.clients.length
     }));
+    const onlineMessage = {
+      type: 'system',
+      message: `有用户加入房间！当前在线人数: ${this.clients.length}`,
+    };
+    this.broadcastMessage(server, JSON.stringify(onlineMessage));
 
     // 返回客户端 WebSocket
     return new Response(null, {
@@ -97,6 +102,13 @@ export class ChatRoom extends DurableObject {
     for (const client of this.clients) {
       client.send(JSON.stringify(leaveMessage));
     }
+  }
+  private broadcastMessage(ws: WebSocket,message: string) {
+    for (const client of this.clients) {
+      if (client==ws) continue;
+      client.send(message);
+    }
+    console.log('Broadcasting message:', message)
   }
 }
 export const obj = new Hono<{ Bindings: CloudflareBindings }>()
