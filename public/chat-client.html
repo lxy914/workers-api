@@ -226,7 +226,8 @@
             const message = {
                 type: 'message',
                 user: username,
-                content: content
+                content: content,
+                timestamp: Date.now()
             };
 
             ws.send(JSON.stringify(message));
