@@ -118,7 +118,7 @@
     function connectWebSocket() {
         // 根据环境确定WebSocket URL，这里假设Durable Object部署在当前域名
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//localhost:8787/durable/chat`;
+        const wsUrl = `${wsProtocol}//${window.location.host}/durable/chat`;
 
         // 创建WebSocket连接
         ws = new WebSocket(wsUrl);
