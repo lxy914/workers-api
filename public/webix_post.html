@@ -93,6 +93,7 @@
             const res = await response.json()
             if (res.code !== 200) {
                 webix.alert(res.msg);
+                window.location.href="/login"
             } else {
                 $$("mytable").parse(res.data,"json",true);
             }

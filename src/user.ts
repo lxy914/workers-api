@@ -27,15 +27,12 @@ user.post("/login", async (c) => {
   }
 
   const results = await c.env.DB.prepare("select * from t_user where username=?").bind(username).first()
-  if (results == null) {
-    return c.json({ code: 500, msg: "用户名不存在" })
-  }
-  if (results.password != password) {
-    return c.json({ code: 500, msg: "密码错误" })
+  if (results == null || results.password != password) {
+    return c.json({ code: 500, msg: "用户名或密码错误" })
   }
   await c.env.DB.prepare("update t_user set last_time=? where id=?").bind(Date.now(), results.id).run()
   const payload = {
-    exp: Math.floor(Date.now() / 1000) + 3600 * 24, // Token expires in 30 minutes
+    exp: Math.floor(Date.now() / 1000) + 3600 * 24 * 7, // Token过期时间是一周
     role: results.role
   }
   const token = await sign(payload, c.env.jwt_secret)
