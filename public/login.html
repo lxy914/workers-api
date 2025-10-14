@@ -81,7 +81,11 @@
         if (data.code === 200) {
           window.localStorage.setItem('token', data.token)
           alert('登录成功！上次登录时间：' + new Date(data.last_time).toLocaleString())
-          window.location.href = "/post"
+          if (document.referrer){
+            window.location.href = document.referrer;
+          }else{
+            window.location.href = "/post";
+          }
         } else {
           errorElement.textContent = data.msg;
           errorElement.classList.remove('hidden');
