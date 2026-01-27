@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>MyNote | 极简笔记</title>
+    <link rel="stylesheet" href="./css/vditor.css" />
+    <style>
+        :root { --primary-color: #4285f4; --bg-light: #fafafa; --border-color: #eaeaea; }
+        body { margin: 0; display: flex; height: 100vh; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+        /* 笔记列表栏：改为浅色，更精致 */
+        #list-bar { width: 280px; border-right: 1px solid var(--border-color); background: var(--bg-light); display: flex; flex-direction: column; }
+        .list-header { padding: 20px; font-size: 18px; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center; }
+        .add-btn { cursor: pointer; color: var(--primary-color); font-size: 24px; line-height: 1; }
+
+        .search-box { padding: 0 15px 15px 15px; }
+        .search-box input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; font-size: 13px; }
+
+        .list-container { flex: 1; overflow-y: auto; }
+        .list-item { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: all 0.2s; }
+        .list-item:hover { background: #f0f0f0; }
+        .list-item.active { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 4px solid var(--primary-color); }
+        .list-item h4 { margin: 0 0 5px 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .list-item p { margin: 0; font-size: 12px; color: #999; }
+
+        /* 编辑区域 */
+        #main-editor { flex: 1; display: flex; flex-direction: column; }
+        .editor-header { height: 60px; padding: 0 30px; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); }
+        #note-title-input { border: none; font-size: 20px; font-weight: 600; outline: none; flex: 1; color: #222; }
+        .save-indicator { font-size: 12px; color: #bbb; margin-left: 20px; }
+
+        #vditor { border: none !important; }
+        .vditor-toolbar { border-bottom: 1px solid var(--border-color) !important; background-color: #fff !important; }
+    </style>
+</head>
+<body>
+
+<div id="list-bar">
+    <div class="list-header">
+        <span>我的笔记</span>
+        <span class="add-btn" title="新建笔记">+</span>
+    </div>
+    <div class="search-box">
+        <input type="text" placeholder="快速查找...">
+    </div>
+    <div class="list-container" id="note-list">
+    </div>
+</div>
+
+<div id="main-editor">
+    <div class="editor-header">
+        <input type="text" id="note-title-input" placeholder="无标题笔记">
+        <span class="save-indicator" id="save-status">云端同步已就绪</span>
+    </div>
+    <div id="vditor"></div>
+</div>
+
+<script src="./js/vditor.min.js"></script>
+<script>
+    // 初始化模拟数据
+    let notes = [
+        { id: 1, title: "SpringMVC 源码笔记", content: "# 处理器映射器\n实现原理分析...", time: "10:30" },
+        { id: 2, title: "日常购物清单", content: "- [ ] 买牛奶\n- [ ] 准备会议资料", time: "昨天" }
+    ];
+
+    let currentNoteId = 1;
+    let vditor;
+    let saveTimer = null;
+
+    // 初始化 Vditor
+    vditor = new Vditor('vditor', {
+        height: window.innerHeight - 60,
+        mode: 'ir', // 即时渲染模式
+        placeholder: '开始输入内容...',
+        outline: { enable: true, position: 'right' },
+        toolbarConfig: { pin: true },
+        cache: { enable: false }, // 既然要同步后端，关闭本地缓存
+        input: (value) => {
+            handleAutoSave(value);
+        },
+        after: () => {
+            renderList();
+            loadNote(1);
+        }
+    });
+
+    // 核心功能：防抖自动保存
+    function handleAutoSave(content) {
+        document.getElementById('save-status').innerText = "正在保存...";
+
+        // 清除之前的定时器
+        if (saveTimer) clearTimeout(saveTimer);
+
+        // 设置新的定时器（用户停止输入 1000ms 后执行）
+        saveTimer = setTimeout(() => {
+            const title = document.getElementById('note-title-input').value;
+            console.log(`[Save] ID: ${currentNoteId}, Title: ${title}, Content Length: ${content.length}`);
+
+            // 模拟 AJAX 请求后端
+            /*
+            fetch('/api/note/save', {
+                method: 'POST',
+                body: JSON.stringify({ id: currentNoteId, title, content })
+            }).then(...)
+            */
+
+            document.getElementById('save-status').innerText = "所有更改已保存";
+        }, 1000);
+    }
+
+    // 渲染列表
+    function renderList() {
+        const listEl = document.getElementById('note-list');
+        listEl.innerHTML = notes.map(note => `
+                <div class="list-item ${note.id === currentNoteId ? 'active' : ''}" onclick="loadNote(${note.id})">
+                    <h4>${note.title}</h4>
+                    <p>${note.time}</p>
+                </div>
+            `).join('');
+    }
+
+    // 切换笔记
+    function loadNote(id) {
+        currentNoteId = id;
+        const note = notes.find(n => n.id === id);
+        document.getElementById('note-title-input').value = note.title;
+        vditor.setValue(note.content);
+        renderList();
+    }
+
+    // 标题修改同步触发保存
+    document.getElementById('note-title-input').addEventListener('input', () => {
+        handleAutoSave(vditor.getValue());
+    });
+</script>
+</body>
+</html>
