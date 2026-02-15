@@ -7,6 +7,11 @@ post.get("/", async (c) => {
     const { results } = await c.env.DB.prepare("select * from t_post order by id desc").all()
     return c.json({ code: 200, msg: "操作成功", data: results })
 })
+post.get('/search', async (c) => {
+    const keyword = c.req.query('keyword') || ''
+    const { results } = await c.env.DB.prepare("select * from t_post where title like ? order by id desc").bind('%' + keyword + '%').all()
+    return c.json({ code: 200, msg: "操作成功", data: results })
+})
 post.get('/:id', async (c) => {
     const id = c.req.param('id')
     const post = await c.env.DB.prepare("select * from t_post where id=?").bind(id).first()

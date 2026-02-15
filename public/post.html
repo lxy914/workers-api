@@ -88,8 +88,12 @@
                 ]
             }
         });
-        async function loadData() {
-            const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/post")
+        async function loadData(keyword = "") {
+            let url = "/api/post";
+            if (keyword) {
+                url = `/api/post/search?keyword=${encodeURIComponent(keyword)}`;
+            }
+            const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get(url)
             const res = await response.json()
             if (res.code !== 200) {
                 await webix.alert(res.msg);
@@ -97,6 +101,11 @@
             } else {
                 $$("mytable").parse(res.data,"json",true);
             }
+        }
+        
+        async function searchData() {
+            const keyword = $$("searchInput").getValue();
+            await loadData(keyword);
         }
         const datatable = {
             id: "mytable",
@@ -150,6 +159,10 @@
                                 }
                             }
                         },
+                        {},
+                        { view:"text", id:"searchInput", placeholder:"输入标题搜索", width:200 },
+                        { view:"button", value:"搜索", width:80, click:function(){ searchData() } },
+                        { view:"button", value:"重置", width:80, click:function(){ $$("searchInput").setValue(""); loadData() } }
                     ]
                 },
                 datatable,
