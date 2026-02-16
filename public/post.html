@@ -91,7 +91,7 @@
         async function loadData(keyword = "") {
             let url = "/api/post";
             if (keyword) {
-                url = `/api/post/search?keyword=${encodeURIComponent(keyword)}`;
+                url = `/api/post?keyword=${encodeURIComponent(keyword)}`;
             }
             const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get(url)
             const res = await response.json()

@@ -1,15 +1,18 @@
 import { Hono } from "hono";
-import { except } from "hono/combine";
 
 export const post = new Hono<{ Bindings: CloudflareBindings }>();
 
 post.get("/", async (c) => {
-    const { results } = await c.env.DB.prepare("select * from t_post order by id desc").all()
-    return c.json({ code: 200, msg: "操作成功", data: results })
-})
-post.get('/search', async (c) => {
     const keyword = c.req.query('keyword') || ''
-    const { results } = await c.env.DB.prepare("select * from t_post where title like ? order by id desc").bind('%' + keyword + '%').all()
+    let statement, params: string[]
+    if (keyword) {
+        statement = "select * from t_post where title like ? order by id desc"
+        params = ["%" + keyword + "%"]
+    } else {
+        statement = "select * from t_post order by id desc"
+        params = []
+    }
+    const { results } = await c.env.DB.prepare(statement).bind(...params).all()
     return c.json({ code: 200, msg: "操作成功", data: results })
 })
 post.get('/:id', async (c) => {
