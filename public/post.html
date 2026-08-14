@@ -102,6 +102,28 @@
                 $$("mytable").parse(res.data,"json",true);
             }
         }
+
+        async function loadUserInfo() {
+            try {
+                const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/user/me")
+                const res = await response.json()
+                if (res.code !== 200) {
+                    window.location.href="/login"
+                    return
+                }
+                const user = res.data
+                const roleText = user.role === 'admin' ? '管理员' : '普通用户'
+                document.getElementById('user-badge').innerHTML =
+                    '<i class="fa fa-user mr-1"></i>' + user.username + ' (' + roleText + ') ' +
+                    '<a href="javascript:void(0)" onclick="logout()" style="margin-left:10px;color:#3374e0;text-decoration:underline">注销</a>'
+            } catch (error) {
+                window.location.href="/login"
+            }
+        }
+        window.logout = function() {
+            window.localStorage.removeItem("token");
+            window.location.href="/login";
+        }
         
         async function searchData() {
             const keyword = $$("searchInput").getValue();
@@ -118,6 +140,7 @@
             columns: [
                 {id: "id", header: "id", width: 50},
                 {id: "title", header: "标题", width: 200,editor: "text"},
+                {id: "author", header: "作者", width: 100},
                 {id: "body", header: "内容", width: 500,editor: "text"},
                 {id: "update_time", header: "创建时间", width: 150, template:function(obj){return new Date(obj.update_time).toLocaleString()}}
             ],
@@ -140,7 +163,7 @@
             },
             width: 1000,
             rows: [
-                {type: "header", template: "lxy记录", css: {"font-size":"35px"}},
+                {type: "header", id:"page_header", template:"<div style='display:flex;justify-content:space-between;align-items:center;width:100%'><span style='font-size:35px'>lxy记录</span><span id='user-badge' style='font-size:14px;font-weight:normal'></span></div>"},
                 {
                     view:"toolbar",
                     cols:[
@@ -159,6 +182,31 @@
                                 }
                             }
                         },
+                        {
+                            view:"button",
+                            value:"删除",
+                            width:100,
+                            click:function(){
+                                const selected = $$("mytable").getSelectedItem();
+                                if (!selected) {
+                                    webix.alert("请选择要删除的行");
+                                    return;
+                                }
+                                webix.confirm("确定删除该文章吗？", async (result) => {
+                                    if (!result) return;
+                                    const response = await webix.ajax()
+                                        .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
+                                        .del("/api/post/"+selected.id);
+                                    const json = await response.json()
+                                    if (json.code !== 200) {
+                                        webix.alert(json.msg)
+                                    } else {
+                                        webix.message("删除成功");
+                                        loadData()
+                                    }
+                                });
+                            }
+                        },
                         {},
                         { view:"text", id:"searchInput", placeholder:"输入标题搜索", width:200 },
                         { view:"button", value:"搜索", width:80, click:function(){ searchData() } },
@@ -175,6 +223,7 @@
                 }
             ]
         });
+        loadUserInfo();
         loadData();
     })
 </script>

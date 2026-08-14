@@ -22,8 +22,12 @@
 		}
 	],
 	"vars": {
-		"open_register": 0,
-		"jwt_secret": "workers-api"
+		"open_register": 1
+		/**
+		 * jwt_secret 为敏感信息，不要写入 vars。
+		 * 本地开发：在 .dev.vars 中配置 jwt_secret
+		 * 生产环境：执行 `wrangler secret put jwt_secret`
+		 */
 	},
 	"durable_objects": {
 		"bindings": [

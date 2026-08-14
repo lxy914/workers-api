@@ -9,9 +9,6 @@
       "ESNext"
     ],
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
-    "types": [
-        "types/**/*"
-    ]
+    "jsxImportSource": "hono/jsx"
   },
 }

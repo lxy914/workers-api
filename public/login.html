@@ -49,23 +49,100 @@
         登录
       </button>
     </form>
+
+    <!-- 注册表单（默认隐藏） -->
+    <form id="register-form" class="space-y-4 hidden">
+      <div>
+        <label for="reg-username" class="block text-gray-600 mb-1">用户名</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+            <i class="fa fa-user"></i>
+          </span>
+          <input type="text" id="reg-username" name="username"
+            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="请输入用户名" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="reg-password" class="block text-gray-600 mb-1">密码</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+            <i class="fa fa-lock"></i>
+          </span>
+          <input type="password" id="reg-password" name="password"
+            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="请输入密码" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="reg-confirm" class="block text-gray-600 mb-1">确认密码</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+            <i class="fa fa-lock"></i>
+          </span>
+          <input type="password" id="reg-confirm" name="confirm"
+            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="请再次输入密码" required>
+        </div>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-400">
+        注册
+      </button>
+    </form>
+
+    <!-- 切换登录/注册 -->
+    <p class="text-center text-sm text-gray-500 mt-4">
+      <span id="switch-hint">没有账号？</span>
+      <a href="javascript:void(0)" id="switch-btn"
+        class="text-blue-500 hover:text-blue-700 font-medium">注册</a>
+    </p>
   </div>
 
   <script>
     const BASE_URL = '/api';
+    const errorElement = document.getElementById('error-message');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const switchBtn = document.getElementById('switch-btn');
+    const switchHint = document.getElementById('switch-hint');
+    const pageTitle = document.querySelector('h2');
+
+    function showError(msg) {
+      errorElement.textContent = msg;
+      errorElement.classList.remove('hidden');
+    }
+
+    function clearError() {
+      errorElement.textContent = '';
+      errorElement.classList.add('hidden');
+    }
+
+    // 切换登录/注册表单
+    switchBtn.addEventListener('click', () => {
+      clearError();
+      const isLogin = !loginForm.classList.contains('hidden');
+      loginForm.classList.toggle('hidden', isLogin);
+      registerForm.classList.toggle('hidden', !isLogin);
+      pageTitle.textContent = isLogin ? '注册账户' : '登录账户';
+      switchHint.textContent = isLogin ? '已有账号？' : '没有账号？';
+      switchBtn.textContent = isLogin ? '登录' : '注册';
+    });
+
     // 登录表单提交处理
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault(); // 阻止表单默认提交
 
       // 获取表单数据
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
-      const errorElement = document.getElementById('error-message');
 
       // 前端基础验证
       if (!username || !password) {
-        errorElement.textContent = '用户名和密码不能为空';
-        errorElement.classList.remove('hidden');
+        showError('用户名和密码不能为空');
         return;
       }
 
@@ -87,12 +164,48 @@
             window.location.href = "/post";
           }
         } else {
-          errorElement.textContent = data.msg;
-          errorElement.classList.remove('hidden');
+          showError(data.msg);
         }
       } catch (error) {
-        errorElement.textContent = '网络错误，请稍后重试';
-        errorElement.classList.remove('hidden');
+        showError('网络错误，请稍后重试');
+      }
+    });
+
+    // 注册表单提交处理
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const confirm = document.getElementById('reg-confirm').value.trim();
+
+      if (!username || !password) {
+        showError('用户名和密码不能为空');
+        return;
+      }
+      if (password !== confirm) {
+        showError('两次输入的密码不一致');
+        return;
+      }
+
+      try {
+        const response = await fetch(BASE_URL + '/user/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+        if (data.code === 200) {
+          alert('注册成功，请登录');
+          switchBtn.click(); // 切换回登录表单
+          document.getElementById('username').value = username;
+          document.getElementById('password').value = '';
+        } else {
+          showError(data.msg);
+        }
+      } catch (error) {
+        showError('网络错误，请稍后重试');
       }
     });
   </script>
