@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的笔记</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss-browser/4.1.13/index.global.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" rel="stylesheet">
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body { padding-bottom: 80px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .card-swipe { touch-action: pan-x; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999; transition: opacity 0.3s; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+  <!-- Toast 通知 -->
+  <div id="toast" class="toast hidden px-4 py-2 rounded-lg text-white text-sm shadow-lg"></div>
+
+  <!-- ===== 列表视图 ===== -->
+  <div id="view-list" class="view active">
+    <!-- 顶部栏 -->
+    <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+      <div class="flex items-center justify-between px-4 h-14">
+        <h1 class="text-lg font-bold text-gray-800"><i class="fa fa-pencil-square-o text-blue-500 mr-2"></i>我的笔记</h1>
+        <div class="flex items-center gap-3 text-sm">
+          <span id="user-badge" class="text-gray-500"></span>
+          <a href="javascript:logout()" class="text-gray-400 hover:text-red-500"><i class="fa fa-sign-out"></i></a>
+        </div>
+      </div>
+      <!-- 搜索栏 -->
+      <div class="px-4 pb-3">
+        <div class="relative">
+          <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+          <input type="text" id="search-input" placeholder="搜索文章标题..."
+            class="w-full pl-9 pr-3 py-2 bg-gray-100 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-300">
+        </div>
+      </div>
+    </div>
+
+    <!-- 文章列表 -->
+    <div id="article-list" class="px-4 pt-2 space-y-3">
+      <!-- 卡片由 JS 动态渲染 -->
+    </div>
+
+    <!-- 空状态 -->
+    <div id="empty-state" class="hidden text-center py-20 text-gray-400">
+      <i class="fa fa-file-text-o text-5xl mb-3"></i>
+      <p class="text-sm">暂无文章</p>
+    </div>
+
+    <!-- 加载状态 -->
+    <div id="loading-state" class="text-center py-20 text-gray-400">
+      <i class="fa fa-spinner fa-pulse text-2xl"></i>
+      <p class="text-sm mt-2">加载中...</p>
+    </div>
+  </div>
+
+  <!-- ===== 详情视图 ===== -->
+  <div id="view-detail" class="view">
+    <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+      <div class="flex items-center h-14 px-4">
+        <button onclick="showList()" class="text-blue-500 text-lg mr-3"><i class="fa fa-chevron-left"></i></button>
+        <h2 class="text-lg font-bold text-gray-800 flex-1 truncate" id="detail-title-header">文章详情</h2>
+        <button onclick="deleteCurrent()" class="text-red-400 text-lg mr-3"><i class="fa fa-trash-o"></i></button>
+        <button onclick="showEditor('edit')" class="text-blue-500 text-lg"><i class="fa fa-pencil"></i></button>
+      </div>
+    </div>
+    <div class="px-4 pt-4 pb-8">
+      <h2 id="detail-title" class="text-xl font-bold text-gray-800 mb-2"></h2>
+      <div class="flex items-center gap-3 text-xs text-gray-400 mb-4">
+        <span><i class="fa fa-user mr-1"></i><span id="detail-author"></span></span>
+        <span><i class="fa fa-clock-o mr-1"></i><span id="detail-time"></span></span>
+      </div>
+      <div id="detail-body" class="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ===== 编辑器视图 ===== -->
+  <div id="view-editor" class="view">
+    <div class="sticky top-0 bg-white border-b border-gray-200 z-10">
+      <div class="flex items-center h-14 px-4">
+        <button onclick="backFromEditor()" class="text-blue-500 text-lg mr-3"><i class="fa fa-times"></i></button>
+        <h2 class="text-lg font-bold text-gray-800 flex-1" id="editor-title-header">新增文章</h2>
+        <button onclick="saveArticle()" class="text-blue-500 font-medium text-sm px-3 py-1 bg-blue-50 rounded-lg">保存</button>
+      </div>
+    </div>
+    <div class="px-4 pt-4 pb-8">
+      <input type="text" id="editor-title" placeholder="输入标题..."
+        class="w-full text-lg font-bold text-gray-800 outline-none mb-4 placeholder-gray-300">
+      <textarea id="editor-body" placeholder="开始写点什么..."
+        class="w-full h-[calc(100vh-220px)] text-sm text-gray-700 outline-none resize-none leading-relaxed placeholder-gray-300"></textarea>
+    </div>
+  </div>
+
+  <!-- 浮动新增按钮（仅列表页显示） -->
+  <button id="fab-add" onclick="showEditor('new')"
+    class="fixed bottom-6 right-6 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-600 active:bg-blue-700 transition z-20">
+    <i class="fa fa-plus"></i>
+  </button>
+
+  <script>
+    // ===== API 封装 =====
+    async function api(method, url, data) {
+      const headers = { token: window.localStorage.getItem('token') }
+      if (data !== undefined) headers['Content-Type'] = 'application/json'
+      const opts = { method, headers }
+      if (data !== undefined) opts.body = JSON.stringify(data)
+      const response = await fetch(url, opts)
+      const newToken = response.headers.get('x-new-token')
+      if (newToken) window.localStorage.setItem('token', newToken)
+      return response.json()
+    }
+
+    // ===== Toast 通知 =====
+    function showToast(msg, type = 'success') {
+      const el = document.getElementById('toast')
+      el.textContent = msg
+      el.className = 'toast px-4 py-2 rounded-lg text-white text-sm shadow-lg ' +
+        (type === 'success' ? 'bg-green-500' : 'bg-red-500')
+      el.classList.remove('hidden')
+      setTimeout(() => el.classList.add('hidden'), 2500)
+    }
+
+    // ===== 视图切换 =====
+    function switchView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'))
+      document.getElementById(id).classList.add('active')
+      document.getElementById('fab-add').style.display = id === 'view-list' ? 'flex' : 'none'
+    }
+
+    function showList() { switchView('view-list'); loadArticles() }
+    function showDetail(post) { currentPost = post; renderDetail(post); switchView('view-detail') }
+
+    // ===== 状态 =====
+    let currentPost = null
+    let editorMode = 'new' // 'new' | 'edit'
+
+    // ===== 登录检查 =====
+    async function checkLogin() {
+      const token = window.localStorage.getItem('token')
+      if (!token) { window.location.href = '/login'; return }
+      try {
+        const res = await api('GET', '/api/user/me')
+        if (res.code !== 200) { window.location.href = '/login'; return }
+        const user = res.data
+        const roleText = user.role === 'admin' ? '管理员' : '用户'
+        document.getElementById('user-badge').textContent = user.username + ' (' + roleText + ')'
+      } catch {
+        window.location.href = '/login'
+      }
+    }
+
+    function logout() {
+      window.localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+
+    // ===== 文章列表 =====
+    async function loadArticles(keyword) {
+      const listEl = document.getElementById('article-list')
+      const emptyEl = document.getElementById('empty-state')
+      const loadingEl = document.getElementById('loading-state')
+      listEl.innerHTML = ''
+      emptyEl.classList.add('hidden')
+      loadingEl.classList.remove('hidden')
+      try {
+        let url = '/api/post'
+        if (keyword) url += '?keyword=' + encodeURIComponent(keyword)
+        const res = await api('GET', url)
+        loadingEl.classList.add('hidden')
+        if (res.code !== 200 || !res.data || res.data.length === 0) {
+          emptyEl.classList.remove('hidden')
+          return
+        }
+        res.data.forEach(p => {
+          const card = document.createElement('div')
+          card.className = 'bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100 cursor-pointer active:bg-gray-50 transition'
+          card.innerHTML = `
+            <h3 class="font-bold text-gray-800 text-sm mb-1 truncate">${escapeHtml(p.title)}</h3>
+            <p class="text-xs text-gray-400 truncate">${escapeHtml((p.body || '').substring(0, 60))}</p>
+            <div class="flex items-center gap-3 mt-2 text-xs text-gray-400">
+              <span><i class="fa fa-user mr-1"></i>${escapeHtml(p.author || '未知')}</span>
+              <span><i class="fa fa-clock-o mr-1"></i>${formatTime(p.update_time)}</span>
+            </div>
+          `
+          card.addEventListener('click', () => showDetail(p))
+          listEl.appendChild(card)
+        })
+      } catch {
+        loadingEl.classList.add('hidden')
+        emptyEl.classList.remove('hidden')
+        emptyEl.innerHTML = '<i class="fa fa-exclamation-triangle text-5xl mb-3"></i><p class="text-sm">加载失败，下拉重试</p>'
+      }
+    }
+
+    // ===== 文章详情 =====
+    function renderDetail(post) {
+      document.getElementById('detail-title').textContent = post.title || '无标题'
+      document.getElementById('detail-author').textContent = post.author || '未知'
+      document.getElementById('detail-time').textContent = formatTime(post.update_time)
+      document.getElementById('detail-body').textContent = post.body || ''
+      document.getElementById('detail-title-header').textContent = post.title || '文章详情'
+    }
+
+    // ===== 编辑器 =====
+    function showEditor(mode) {
+      editorMode = mode
+      if (mode === 'new') {
+        document.getElementById('editor-title-header').textContent = '新增文章'
+        document.getElementById('editor-title').value = ''
+        document.getElementById('editor-body').value = ''
+      } else if (mode === 'edit' && currentPost) {
+        document.getElementById('editor-title-header').textContent = '编辑文章'
+        document.getElementById('editor-title').value = currentPost.title || ''
+        document.getElementById('editor-body').value = currentPost.body || ''
+      }
+      switchView('view-editor')
+    }
+
+    function backFromEditor() {
+      if (editorMode === 'edit' && currentPost) {
+        showDetail(currentPost)
+      } else {
+        showList()
+      }
+    }
+
+    async function saveArticle() {
+      const title = document.getElementById('editor-title').value.trim()
+      const body = document.getElementById('editor-body').value.trim()
+      if (!title || !body) { showToast('标题和内容不能为空', 'error'); return }
+      try {
+        if (editorMode === 'new') {
+          const res = await api('POST', '/api/post', { title, body })
+          if (res.code !== 200) { showToast(res.msg, 'error'); return }
+          showToast('新增成功')
+          showList()
+        } else {
+          const res = await api('PUT', '/api/post/' + currentPost.id, { title, body })
+          if (res.code !== 200) { showToast(res.msg, 'error'); return }
+          currentPost.title = title
+          currentPost.body = body
+          showToast('修改成功')
+          showDetail(currentPost)
+        }
+      } catch {
+        showToast('操作失败，请稍后重试', 'error')
+      }
+    }
+
+    // ===== 删除 =====
+    async function deleteCurrent() {
+      if (!currentPost) return
+      if (!confirm('确定删除「' + currentPost.title + '」吗？')) return
+      try {
+        const res = await api('DELETE', '/api/post/' + currentPost.id)
+        if (res.code !== 200) { showToast(res.msg, 'error'); return }
+        showToast('删除成功')
+        currentPost = null
+        showList()
+      } catch {
+        showToast('删除失败，请稍后重试', 'error')
+      }
+    }
+
+    // ===== 工具函数 =====
+    function formatTime(ts) {
+      if (!ts) return ''
+      const d = new Date(ts)
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
+    }
+
+    function escapeHtml(s) {
+      if (!s) return ''
+      const div = document.createElement('div')
+      div.textContent = s
+      return div.innerHTML
+    }
+
+    // ===== 搜索 =====
+    let searchTimer = null
+    document.getElementById('search-input').addEventListener('input', function() {
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(() => loadArticles(this.value.trim()), 400)
+    })
+
+    // ===== 初始化 =====
+    checkLogin().then(() => loadArticles())
+  </script>
+</body>
+</html>
