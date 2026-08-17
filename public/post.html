@@ -8,6 +8,30 @@
 <body>
 <script src="/js/webix.min.js" type="text/javascript"></script>
 <script>
+    // API请求封装：自动处理 token 续期
+    async function api(method, url, data) {
+        const headers = {token: window.localStorage.getItem("token")}
+        if (data !== undefined) {
+            headers["Content-type"] = "application/json"
+        }
+        let response
+        if (method === 'GET') {
+            response = await webix.ajax().headers(headers).get(url)
+        } else if (method === 'POST') {
+            response = await webix.ajax().headers(headers).post(url, JSON.stringify(data))
+        } else if (method === 'PUT') {
+            response = await webix.ajax().headers(headers).put(url, JSON.stringify(data))
+        } else if (method === 'DELETE') {
+            response = await webix.ajax().headers(headers).del(url)
+        }
+        // 自动续期：检查响应头中的新token
+        const newToken = response.headers && response.headers['x-new-token']
+        if (newToken) {
+            window.localStorage.setItem('token', newToken)
+        }
+        return response.json()
+    }
+
     webix.ready(async function() {
         webix.ui({
             view:"window",
@@ -23,10 +47,7 @@
                     {view:"textarea", name:"body",width:600, height:200, label:"内容"},
                     {view:"button", value:"提交", click:async function () {
                             const params = this.getParentView().getValues()
-                            const response = await webix.ajax()
-                                .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
-                                .post("/api/post",JSON.stringify(params));
-                            const json = await response.json()
+                            const json = await api("POST", "/api/post", params)
                             if (json.code !== 200) {
                                 webix.alert(json.msg)
                                 return [];
@@ -53,10 +74,7 @@
                     {view:"textarea", name:"body",width:600, height:200, label:"内容"},
                     {view:"button", value:"提交", click:async function () {
                             var values = this.getParentView().getValues();
-                            const response = await webix.ajax()
-                                .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
-                                .put("/api/post/"+values.id,JSON.stringify({title:values.title,body:values.body}))
-                            const json = await response.json()
+                            const json = await api("PUT", "/api/post/"+values.id, {title:values.title,body:values.body})
                             if (json.code !== 200) {
                                 webix.alert(json.msg)
                             }else{
@@ -93,8 +111,7 @@
             if (keyword) {
                 url = `/api/post?keyword=${encodeURIComponent(keyword)}`;
             }
-            const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get(url)
-            const res = await response.json()
+            const res = await api("GET", url)
             if (res.code !== 200) {
                 await webix.alert(res.msg);
                 window.location.href="/login"
@@ -105,8 +122,7 @@
 
         async function loadUserInfo() {
             try {
-                const response = await webix.ajax().headers({token: window.localStorage.getItem("token")}).get("/api/user/me")
-                const res = await response.json()
+                const res = await api("GET", "/api/user/me")
                 if (res.code !== 200) {
                     window.location.href="/login"
                     return
@@ -194,10 +210,7 @@
                                 }
                                 webix.confirm("确定删除该文章吗？", async (result) => {
                                     if (!result) return;
-                                    const response = await webix.ajax()
-                                        .headers({token: window.localStorage.getItem("token"),"Content-type":"application/json"})
-                                        .del("/api/post/"+selected.id);
-                                    const json = await response.json()
+                                    const json = await api("DELETE", "/api/post/"+selected.id)
                                     if (json.code !== 200) {
                                         webix.alert(json.msg)
                                     } else {

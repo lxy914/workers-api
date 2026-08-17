@@ -14,6 +14,23 @@ export const jwt_verify = createMiddleware<{ Bindings: CloudflareBindings; Varia
     const payload = await verify(token, c.env.jwt_secret)
     c.set("role", payload.role as string)
     c.set("uid", payload.uid as number)
+
+    // 自动续期：如果用户30天内有登录行为，签发新token
+    const user = await c.env.DB.prepare("select last_time from t_user where id=?").bind(payload.uid).first()
+    if (user) {
+      const lastTime = user.last_time as number
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000
+      if (lastTime > 0 && Date.now() - lastTime < thirtyDays) {
+        const newPayload = {
+          exp: Math.floor(Date.now() / 1000) + 3600 * 24 * 30,
+          role: payload.role,
+          uid: payload.uid
+        }
+        const newToken = await sign(newPayload, c.env.jwt_secret)
+        c.header('x-new-token', newToken)
+      }
+    }
+
     await next()
   } catch (error) {
     return c.json({ code: 500, 'msg': 'token已过期,请重新登陆' })
@@ -60,7 +77,7 @@ user.post("/login", async (c) => {
 
   await c.env.DB.prepare("update t_user set last_time=? where id=?").bind(Date.now(), results.id).run()
   const payload = {
-    exp: Math.floor(Date.now() / 1000) + 3600 * 24 * 7, // Token过期时间是一周
+    exp: Math.floor(Date.now() / 1000) + 3600 * 24 * 30, // Token过期时间是30天
     role: results.role,
     uid: results.id
   }
