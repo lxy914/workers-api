@@ -3,7 +3,7 @@ import { cors } from 'hono/cors'
 import { user, jwt_verify } from "./user";
 import { post } from "./post"
 import { obj } from "./durable-object"
-export { Counter,ChatRoom } from "./durable-object"
+export { ChatRoom } from "./durable-object"
 
 
 

@@ -32,10 +32,6 @@
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "Counter",
-				"name": "COUNTER"
-			},
-			{
 				"class_name": "ChatRoom",
 				"name": "CHAT"
 			}
@@ -52,6 +48,12 @@
 			"tag": "v2",
 			"new_sqlite_classes": [
 				"ChatRoom"
+			]
+		},
+		{
+			"tag": "v3",
+			"deleted_classes": [
+				"Counter"
 			]
 		}
 	]
