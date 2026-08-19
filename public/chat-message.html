@@ -1,0 +1,109 @@
+<template component>
+  <style>
+    :host {
+      display: block;
+    }
+    .row {
+      display: flex;
+      margin: 6px 0;
+    }
+    .row[type="system"],
+    .row[type="error"],
+    .row[type="unknown"] {
+      justify-content: center;
+    }
+    .row[type="message"].mine {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .bubble.system,
+    .bubble.unknown {
+      background: rgba(107, 114, 128, 0.1);
+      color: #6b7280;
+      font-size: 13px;
+      font-style: italic;
+    }
+    .bubble.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      font-size: 13px;
+    }
+    .bubble.message {
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+    .bubble.message.mine {
+      background: #3b82f6;
+      color: #fff;
+    }
+    .meta {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      opacity: 0.85;
+    }
+
+    /* 移动端适配：气泡更宽、字号略大，提升可读性 */
+    @media (max-width: 768px) {
+      .row {
+        margin: 4px 0;
+      }
+      .bubble {
+        max-width: 88%;
+        padding: 9px 12px;
+        font-size: 15px;
+      }
+      .meta {
+        font-size: 11px;
+      }
+    }
+  </style>
+
+  <div
+    class="row"
+    attr:type="msg.type"
+    class:mine="msg.type === 'message' && msg.user === hostName"
+  >
+    <o-if :value="msg.type === 'system'">
+      <div class="bubble system">ℹ {{msg.message}}</div>
+    </o-if>
+    <o-else-if :value="msg.type === 'error'">
+      <div class="bubble error">⚠ {{msg.message}}</div>
+    </o-else-if>
+    <o-else-if :value="msg.type === 'message'">
+      <div class="bubble message" class:mine="msg.user === hostName">
+        <div class="meta">{{msg.user}} · {{formatTime(msg.timestamp)}}</div>
+        <div>{{msg.content}}</div>
+      </div>
+    </o-else-if>
+    <o-else>
+      <div class="bubble unknown">{{msg.content || msg.message || JSON.stringify(msg)}}</div>
+    </o-else>
+  </div>
+
+  <script>
+    export default {
+      tag: "chat-message",
+      attrs: {
+        hostName: "",
+      },
+      data: {
+        msg: {},
+      },
+      proto: {
+        formatTime(ts) {
+          if (!ts) return "";
+          return new Date(ts).toLocaleTimeString();
+        },
+      },
+    };
+  </script>
+</template>

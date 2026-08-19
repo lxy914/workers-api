@@ -1,0 +1,392 @@
+<template page>
+  <l-m src="./chat-message.html"></l-m>
+  <style>
+    :host {
+      display: block;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    .wrap {
+      max-width: 768px;
+      margin: 0 auto;
+      padding: 32px 16px;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      color: #1f2937;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      margin: 0 0 12px;
+      font-size: clamp(1.8rem, 5vw, 2.5rem);
+      color: #374151;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+    .status[state="connecting"] .dot,
+    .status[state="reconnecting"] .dot {
+      animation: status-pulse 1s ease-in-out infinite;
+    }
+    .status[state="connected"] {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status[state="closed"] {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .status[state="error"] {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    @keyframes status-pulse {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.25;
+      }
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+      padding: 24px;
+    }
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      color: #374151;
+    }
+    .input-row {
+      display: flex;
+      gap: 12px;
+    }
+    .input-row input {
+      flex: 1;
+    }
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      height: 60vh;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .empty-tip {
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+      font-style: italic;
+      padding: 24px 0;
+    }
+    .input-bar {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .input-bar input {
+      flex: 1;
+    }
+
+    input {
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    .btn-primary {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    .btn-primary:active {
+      background: #1d4ed8;
+      transform: scale(0.97);
+    }
+
+    /* ---------- 移动端适配 ---------- */
+    @media (max-width: 768px) {
+      .wrap {
+        display: flex;
+        flex-direction: column;
+        min-height: 100dvh;
+        padding: 16px 12px;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .status {
+        padding: 3px 10px;
+        font-size: 12px;
+      }
+      .card {
+        padding: 20px 16px;
+      }
+      .chat {
+        flex: 1;
+        height: auto;
+        min-height: 0;
+      }
+      .messages {
+        padding: 12px;
+      }
+      .input-bar {
+        padding: 12px;
+        gap: 10px;
+      }
+      input {
+        padding: 13px 14px;
+      }
+      .btn-primary {
+        padding: 13px 18px;
+      }
+    }
+  </style>
+
+  <div class="wrap">
+    <header class="header">
+      <h1>💬 实时聊天房间</h1>
+      <div class="status" attr:state="connectionState">
+        <span class="dot"></span>
+        <span>{{statusText}}</span>
+      </div>
+    </header>
+
+    <!-- 用户名设置 -->
+    <o-if :value="!joined">
+      <div class="card">
+        <h2>请输入您的用户名</h2>
+        <div class="input-row">
+          <input
+            type="text"
+            sync:value="username"
+            placeholder="您的昵称"
+            on:keypress="usernameKeypress($event)"
+          />
+          <button class="btn-primary" on:click="join">进入聊天</button>
+        </div>
+      </div>
+    </o-if>
+
+    <!-- 聊天区域 -->
+    <o-if :value="joined">
+      <div class="chat">
+        <div id="messages" class="messages">
+          <o-if :value="messages.length === 0">
+            <div class="empty-tip">聊天记录将在这里显示</div>
+          </o-if>
+          <o-fill :value="messages">
+            <chat-message :msg="$data" :host-name="$host.username"></chat-message>
+          </o-fill>
+        </div>
+        <div class="input-bar">
+          <input
+            type="text"
+            id="message-input"
+            sync:value="inputValue"
+            placeholder="输入消息..."
+            on:keypress="inputKeypress($event)"
+          />
+          <button class="btn-primary" on:click="sendMessage">发送 ➤</button>
+        </div>
+      </div>
+    </o-if>
+  </div>
+
+  <script>
+    export default async () => {
+      // WebSocket 连接实例（非响应式对象，放在闭包中管理）
+      let ws = null;
+      let closeCode = "";
+      const maxReconnectAttempts = 5;
+      const maxMessages = 200; // 最多保留的消息条数，防止DOM膨胀
+
+      return {
+        data: {
+          username: "",
+          joined: false,
+          inputValue: "",
+          messages: [],
+          // connecting | connected | reconnecting | closed | error
+          connectionState: "connecting",
+          reconnectAttempts: 0,
+        },
+        proto: {
+          get statusText() {
+            switch (this.connectionState) {
+              case "connected":
+                return "已连接";
+              case "reconnecting":
+                return `尝试重连 (${this.reconnectAttempts}/${maxReconnectAttempts})...`;
+              case "closed":
+                return `连接已关闭 (${closeCode})`;
+              case "error":
+                return "连接错误";
+              default:
+                return "正在连接...";
+            }
+          },
+          // 更新连接状态显示
+          setConnectionState(state, code) {
+            if (code !== undefined) closeCode = code;
+            this.connectionState = state;
+          },
+          // 连接WebSocket
+          connectWebSocket() {
+            // 根据环境确定WebSocket URL，这里假设Durable Object部署在当前域名
+            const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${wsProtocol}//${location.host}/durable/chat`;
+
+            // 创建WebSocket连接
+            ws = new WebSocket(wsUrl);
+
+            // 连接打开时
+            ws.onopen = () => {
+              this.setConnectionState("connected");
+              this.reconnectAttempts = 0; // 重置重连计数器
+            };
+
+            // 接收消息时
+            ws.onmessage = (event) => {
+              try {
+                this.appendMessage(JSON.parse(event.data));
+              } catch (error) {
+                console.error("解析消息失败:", error);
+                this.appendMessage({ type: "error", message: "收到无效格式的消息" });
+              }
+            };
+
+            // 连接关闭时
+            ws.onclose = (event) => {
+              // 自动重连
+              if (this.reconnectAttempts < maxReconnectAttempts) {
+                this.reconnectAttempts++;
+                this.setConnectionState("reconnecting", event.code);
+                const delay = Math.min(1000 * this.reconnectAttempts, 5000); // 指数退避重连
+                setTimeout(() => this.connectWebSocket(), delay);
+              } else {
+                this.setConnectionState("closed", event.code);
+                this.appendMessage({ type: "error", message: "连接已断开，无法重新连接。请刷新页面重试。" });
+              }
+            };
+
+            // 发生错误时
+            ws.onerror = (error) => {
+              console.error("WebSocket错误:", error);
+              this.setConnectionState("error");
+            };
+          },
+          // 追加一条消息并滚动到底部
+          appendMessage(message) {
+            this.messages.push(message);
+            // 超出上限时丢弃最早的，避免长时间聊天DOM膨胀卡顿
+            if (this.messages.length > maxMessages) {
+              this.messages.splice(0, this.messages.length - maxMessages);
+            }
+            setTimeout(() => {
+              const list = this.shadow.$("#messages");
+              if (list) list.ele.scrollTop = list.ele.scrollHeight;
+            });
+          },
+          // 进入聊天
+          join() {
+            const name = this.username.trim();
+            if (!name) {
+              alert("请输入用户名");
+              return;
+            }
+            this.joined = true;
+            this.connectWebSocket();
+          },
+          usernameKeypress(event) {
+            if (event.key === "Enter") this.join();
+          },
+          // 发送消息
+          sendMessage() {
+            const content = this.inputValue.trim();
+            if (!content) return;
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              const message = {
+                type: "message",
+                user: this.username,
+                content: content,
+                timestamp: Date.now(),
+              };
+              ws.send(JSON.stringify(message));
+              this.appendMessage(message);
+              this.inputValue = "";
+              const input = this.shadow.$("#message-input");
+              if (input) input.ele.focus();
+            } else {
+              this.appendMessage({ type: "error", message: "连接未建立，无法发送消息" });
+            }
+          },
+          inputKeypress(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              this.sendMessage();
+            }
+          },
+        },
+        detached() {
+          if (ws) {
+            ws.close(1000, "用户离开");
+            ws = null;
+          }
+        },
+      };
+    };
+  </script>
+</template>
