@@ -73,11 +73,17 @@ post.put('/:id', owner_or_admin, async (c) => {
     if (!param.title || !param.body) {
         return c.json({ code: 500, msg: 'title或body参数不能为空' })
     }
-    await c.env.DB.prepare(`update t_post set title = ?,body = ? where id = ?`).bind(param.title,param.body,id).run()
+    const result = await c.env.DB.prepare(`update t_post set title = ?,body = ? where id = ?`).bind(param.title,param.body,id).run()
+    if (result.meta.changes === 0) {
+        return c.json({ code: 500, msg: "文章不存在" })
+    }
     return c.json({ code: 200, msg: "操作成功" })
 })
 post.delete('/:id', owner_or_admin, async (c) => {
     const id = c.req.param('id')
-    await c.env.DB.prepare(`delete from t_post where id = ?`).bind(id).run()
+    const result = await c.env.DB.prepare(`delete from t_post where id = ?`).bind(id).run()
+    if (result.meta.changes === 0) {
+        return c.json({ code: 500, msg: "文章不存在" })
+    }
     return c.json({ code: 200, msg: "操作成功" })
 })

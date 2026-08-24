@@ -18,4 +18,11 @@ app.route("/api/user", user);
 app.route("/api/post", post);
 app.route("/durable", obj)
 
+// 统一 404 / 500 错误返回 JSON 格式，避免前端解析失败
+app.notFound((c) => c.json({ code: 404, msg: '接口不存在' }))
+app.onError((err, c) => {
+  console.error('unhandled error:', err)
+  return c.json({ code: 500, msg: '服务器内部错误' })
+})
+
 export default app;

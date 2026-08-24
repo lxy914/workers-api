@@ -14,6 +14,9 @@
 	"observability": {
 		"enabled": true
 	},
+	"vars": {
+		"open_register": 0
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",

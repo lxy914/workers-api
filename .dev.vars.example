@@ -1,3 +1,6 @@
 # 本地开发环境变量模板
 # 复制本文件为 .dev.vars 并填写真实值，生产环境请使用 `wrangler secret put <KEY>`
 # jwt_secret=your-strong-random-secret
+
+# 注册开关：仅当值为 1 时开放注册，未配置或为 0 时关闭（默认关闭）
+# open_register=1
