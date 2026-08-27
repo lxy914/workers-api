@@ -1,0 +1,1217 @@
+<template page>
+  <style>
+    :host {
+      display: block;
+      height: 100%;
+    }
+    .app {
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ===== 侧边栏 ===== */
+    .sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-card);
+      border-right: 1px solid var(--color-border);
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .brand-name {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--color-card-fg);
+    }
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-muted-fg);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+    .icon-btn:hover {
+      background: var(--color-muted);
+      color: var(--color-card-fg);
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 14px 16px 0;
+      padding: 0 12px;
+      height: 44px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-bg);
+      color: var(--color-muted-fg);
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .search-box:focus-within {
+      border-color: var(--color-ring);
+    }
+    .search-box input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--color-card-fg);
+      font-size: 14px;
+      font-family: var(--font-sans);
+      outline: none;
+      min-width: 0;
+    }
+    .search-box input::placeholder {
+      color: var(--color-muted-fg);
+      opacity: 0.7;
+    }
+    .new-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 12px 16px;
+      height: 44px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .new-btn:hover {
+      background: var(--color-primary-strong);
+    }
+    .list-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px 8px;
+    }
+    .note-item {
+      padding: 12px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition);
+      border-left: 3px solid transparent;
+    }
+    .note-item:hover {
+      background: var(--color-muted);
+    }
+    .note-item.active {
+      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+      border-left-color: var(--color-primary);
+    }
+    .note-item-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-card-fg);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .note-item-meta {
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--color-muted-fg);
+    }
+    .note-item-preview {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--color-muted-fg);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .empty-tip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 48px 20px;
+      color: var(--color-muted-fg);
+      text-align: center;
+      font-size: 13px;
+    }
+    .empty-tip button {
+      border: 1px solid var(--color-border);
+      background: var(--color-card);
+      color: var(--color-primary);
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .empty-tip button:hover {
+      background: var(--color-muted);
+    }
+    .sidebar-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--color-border);
+    }
+    .user-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-card-fg);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      padding: 8px 10px;
+      min-height: 44px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), color var(--transition);
+    }
+    .logout-btn:hover {
+      background: var(--color-muted);
+      color: var(--color-destructive);
+    }
+
+    /* ===== 编辑器 ===== */
+    .editor {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-bg);
+      transition: background var(--transition);
+    }
+    .editor-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--color-muted-fg);
+      font-size: 14px;
+    }
+    .editor-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .back-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-card);
+      color: var(--color-card-fg);
+      cursor: pointer;
+    }
+    .back-btn:hover {
+      background: var(--color-muted);
+    }
+    .created-time {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-muted-fg);
+    }
+    .danger-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      border: none;
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      padding: 8px 10px;
+      min-height: 40px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), color var(--transition);
+    }
+    .danger-btn:hover {
+      background: color-mix(in srgb, var(--color-destructive) 12%, transparent);
+      color: var(--color-destructive);
+    }
+    .editor-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 24px 28px 32px;
+      overflow-y: auto;
+    }
+    .title-input {
+      border: none;
+      background: transparent;
+      color: var(--color-fg);
+      font-family: var(--font-serif);
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.4;
+      padding: 6px 0;
+      outline: none;
+      border-bottom: 2px solid transparent;
+      transition: border-color var(--transition);
+    }
+    .title-input:focus {
+      border-bottom-color: var(--color-ring);
+    }
+    .title-input::placeholder {
+      color: var(--color-muted-fg);
+      opacity: 0.6;
+    }
+
+    /* ===== Markdown 工具栏 ===== */
+    .md-toolbar {
+      display: flex;
+      gap: 4px;
+      margin-top: 14px;
+      padding: 3px;
+      background: var(--color-muted);
+      border-radius: var(--radius-sm);
+      align-self: flex-start;
+    }
+    .md-tab {
+      padding: 5px 14px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      min-height: 32px;
+      transition: background var(--transition), color var(--transition);
+    }
+    .md-tab:hover {
+      color: var(--color-card-fg);
+    }
+    .md-tab.active {
+      background: var(--color-card);
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    /* ===== 格式工具栏 ===== */
+    .fmt-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .fmt-toolbar.hidden {
+      display: none;
+    }
+    .fmt-btn {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      min-height: 32px;
+      transition: background var(--transition), color var(--transition);
+    }
+    .fmt-btn:hover {
+      background: var(--color-muted);
+      color: var(--color-card-fg);
+    }
+    .fmt-btn b {
+      font-weight: 800;
+    }
+    .fmt-btn i {
+      font-style: italic;
+    }
+    .fmt-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--color-border);
+      margin: 0 6px;
+    }
+
+    /* ===== Markdown 编辑/预览双栏 ===== */
+    .md-content {
+      flex: 1;
+      display: flex;
+      gap: 18px;
+      min-height: 0;
+      margin-top: 4px;
+    }
+    .content-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--color-fg);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.9;
+      padding: 12px 0;
+      resize: none;
+      outline: none;
+      min-height: 200px;
+    }
+    .content-input::placeholder {
+      color: var(--color-muted-fg);
+      opacity: 0.6;
+    }
+    .content-input.hidden {
+      display: none;
+    }
+
+    /* ===== Markdown 预览排版 ===== */
+    .md-preview {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 12px 4px 32px;
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--color-fg);
+      word-break: break-word;
+    }
+    .md-preview.hidden {
+      display: none;
+    }
+    .md-preview h1,
+    .md-preview h2,
+    .md-preview h3 {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      color: var(--color-fg);
+      margin: 20px 0 10px;
+      line-height: 1.4;
+    }
+    .md-preview h1 {
+      font-size: 24px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .md-preview h2 {
+      font-size: 20px;
+    }
+    .md-preview h3 {
+      font-size: 17px;
+    }
+    .md-preview p {
+      margin: 10px 0;
+    }
+    .md-preview a {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+    .md-preview ul,
+    .md-preview ol {
+      margin: 10px 0;
+      padding-left: 24px;
+    }
+    .md-preview li {
+      margin: 4px 0;
+    }
+    .md-preview code {
+      background: var(--color-muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: ui-monospace, Consolas, "Courier New", monospace;
+    }
+    .md-preview pre {
+      background: var(--color-muted);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .md-preview pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+    }
+    .md-preview blockquote {
+      margin: 12px 0;
+      padding: 6px 16px;
+      border-left: 3px solid var(--color-primary);
+      color: var(--color-muted-fg);
+      background: color-mix(in srgb, var(--color-muted) 50%, transparent);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+    .md-preview table {
+      border-collapse: collapse;
+      margin: 12px 0;
+      width: 100%;
+    }
+    .md-preview th,
+    .md-preview td {
+      border: 1px solid var(--color-border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .md-preview th {
+      background: var(--color-muted);
+      font-weight: 700;
+    }
+    .md-preview hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 20px 0;
+    }
+    .md-preview img {
+      max-width: 100%;
+      border-radius: var(--radius-sm);
+    }
+    .md-preview del {
+      color: var(--color-muted-fg);
+    }
+    .md-preview input[type="checkbox"] {
+      margin-right: 6px;
+      accent-color: var(--color-primary);
+    }
+
+    /* ===== 字数统计 ===== */
+    .editor-stats {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 10px 0 2px;
+      margin-top: 8px;
+      border-top: 1px solid var(--color-border);
+      font-size: 12px;
+      color: var(--color-muted-fg);
+      white-space: nowrap;
+    }
+
+    /* ===== 删除确认层 ===== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 47, 46, 0.45);
+      padding: 20px;
+    }
+    .confirm-card {
+      width: 100%;
+      max-width: 340px;
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 24px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .confirm-card h3 {
+      margin: 0;
+      font-size: 17px;
+      color: var(--color-card-fg);
+    }
+    .confirm-card p {
+      margin: 8px 0 20px;
+      font-size: 13px;
+      color: var(--color-muted-fg);
+    }
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .ghost-btn {
+      padding: 8px 18px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-card-fg);
+      font-size: 14px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .ghost-btn:hover {
+      background: var(--color-muted);
+    }
+    .danger-solid-btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--color-destructive);
+      color: var(--color-on-destructive);
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: filter var(--transition);
+    }
+    .danger-solid-btn:hover {
+      filter: brightness(0.92);
+    }
+
+    /* ===== Toast 提示 ===== */
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      color: var(--color-card-fg);
+      font-size: 13px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+    .toast.success {
+      border-left: 3px solid var(--color-primary);
+    }
+    .toast.error {
+      border-left: 3px solid var(--color-destructive);
+    }
+
+    /* ===== 响应式：窄屏时列表与编辑器互斥 ===== */
+    @media (max-width: 767px) {
+      .sidebar {
+        width: 100%;
+      }
+      .editor {
+        display: none;
+      }
+      .app.editor-visible .sidebar {
+        display: none;
+      }
+      .app.editor-visible .editor {
+        display: flex;
+      }
+      .back-btn {
+        display: flex;
+      }
+      .editor-body {
+        padding: 16px 18px 24px;
+      }
+      .title-input {
+        font-size: 22px;
+      }
+      .sidebar-footer {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      }
+      .md-tab-split {
+        display: none;
+      }
+    }
+  </style>
+
+  <div class="app" class:editor-visible="editorVisible">
+    <!-- ===== 侧边栏：搜索 + 列表 ===== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-logo">
+            <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M229.66,58.34l-32-32a8,8,0,0,0-11.32,0l-96,96A8,8,0,0,0,88,128v32a8,8,0,0,0,8,8h32a8,8,0,0,0,5.66-2.34l96-96A8,8,0,0,0,229.66,58.34ZM124.69,152H104V131.31l64-64L188.69,88ZM200,76.69,179.31,56,192,43.31,212.69,64ZM224,128v80a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h80a8,8,0,0,1,0,16H48V208H208V128a8,8,0,0,1,16,0Z"/>
+            </svg>
+          </span>
+          <span class="brand-name">墨记</span>
+        </div>
+        <button class="icon-btn" on:click="toggleTheme" attr:title="isDark ? '切换到浅色模式' : '切换到深色模式'">
+          <o-if :value="!isDark">
+            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/>
+            </svg>
+          </o-if>
+          <o-else>
+            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/>
+            </svg>
+          </o-else>
+        </button>
+      </div>
+
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+          <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
+        </svg>
+        <input type="text" sync:value="searchText" placeholder="搜索标题或内容...">
+      </div>
+
+      <button class="new-btn" on:click="addNote">
+        <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+          <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>
+        </svg>
+        新建笔记
+      </button>
+
+      <div class="list-area">
+        <o-fill :value="noteList">
+          <div class="note-item" class:active="$data.id === $host.currentId" on:click="$host.openNote($data.id)">
+            <div class="note-item-title">{{$data.title || '无标题'}}</div>
+            <div class="note-item-meta">{{$host.formatTime($data.updateTime)}}</div>
+            <div class="note-item-preview">{{$data.content}}</div>
+          </div>
+        </o-fill>
+        <o-if :value="noteList.length === 0 && searchText">
+          <div class="empty-tip">
+            <svg width="36" height="36" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
+            </svg>
+            <p>未找到与「{{searchText}}」匹配的笔记</p>
+            <button on:click="clearSearch">清除搜索</button>
+          </div>
+        </o-if>
+        <o-if :value="noteList.length === 0 && !searchText">
+          <div class="empty-tip">
+            <svg width="36" height="36" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M88,96a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H96A8,8,0,0,1,88,96Zm8,40h64a8,8,0,0,0,0-16H96a8,8,0,0,0,0,16Zm32,16H96a8,8,0,0,0,0,16h32a8,8,0,0,0,0-16ZM224,48V156.69A15.86,15.86,0,0,1,219.31,168L168,219.31A15.86,15.86,0,0,1,156.69,224H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32H208A16,16,0,0,1,224,48ZM48,208H152V160a8,8,0,0,1,8-8h48V48H48Zm120-40v28.7L196.69,168Z"/>
+            </svg>
+            <p>还没有笔记，创建第一篇吧</p>
+            <button on:click="addNote">新建笔记</button>
+          </div>
+        </o-if>
+      </div>
+
+      <div class="sidebar-footer">
+        <span class="user-name">
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"/>
+          </svg>
+          {{username}}
+        </span>
+        <button class="logout-btn" on:click="logout">
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"/>
+          </svg>
+          退出
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== 编辑器 ===== -->
+    <main class="editor">
+      <o-if :value="!currentNote">
+        <div class="editor-empty">
+          <svg width="44" height="44" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M232,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"/>
+          </svg>
+          <p>选择一篇笔记开始阅读<br>或新建一篇笔记</p>
+        </div>
+      </o-if>
+      <o-else>
+        <div class="editor-head">
+          <button class="back-btn" on:click="backToList" attr:title="'返回列表'">
+            <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/>
+            </svg>
+          </button>
+          <span class="created-time">
+            <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"/>
+            </svg>
+            创建于 {{createdText}}
+          </span>
+          <button class="danger-btn" on:click="askDelete">
+            <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>
+            </svg>
+            删除
+          </button>
+        </div>
+        <div class="editor-body">
+          <input class="title-input" type="text" sync:value="title" placeholder="无标题">
+          <div class="md-toolbar" role="tablist" attr:aria-label="'编辑器模式'">
+            <button class="md-tab" class:active="mdMode === 'edit'" on:click="switchMdMode('edit')">编辑</button>
+            <button class="md-tab" class:active="mdMode === 'preview'" on:click="switchMdMode('preview')">预览</button>
+            <button class="md-tab md-tab-split" class:active="mdMode === 'split'" on:click="switchMdMode('split')">分屏</button>
+          </div>
+          <div class="md-content">
+            <textarea class="content-input" class:hidden="mdMode === 'preview'" sync:value="content" placeholder="开始书写……（支持 Markdown 语法）"></textarea>
+            <div class="md-preview" class:hidden="mdMode === 'edit'" :html="previewHtml"></div>
+          </div>
+          <div class="fmt-toolbar" class:hidden="mdMode === 'preview'" role="toolbar" attr:aria-label="'格式工具栏'">
+            <button class="fmt-btn" on:click="applyFormat('h1')" attr:title="'一级标题'">H1</button>
+            <button class="fmt-btn" on:click="applyFormat('h2')" attr:title="'二级标题'">H2</button>
+            <button class="fmt-btn" on:click="applyFormat('h3')" attr:title="'三级标题'">H3</button>
+            <span class="fmt-sep"></span>
+            <button class="fmt-btn" on:click="applyFormat('bold')" attr:title="'加粗 (Ctrl+B)'"><b>B</b></button>
+            <button class="fmt-btn" on:click="applyFormat('italic')" attr:title="'斜体 (Ctrl+I)'"><i>I</i></button>
+            <span class="fmt-sep"></span>
+            <button class="fmt-btn" on:click="applyFormat('ul')" attr:title="'无序列表'">• 列表</button>
+            <button class="fmt-btn" on:click="applyFormat('quote')" attr:title="'引用'">引用</button>
+            <button class="fmt-btn" on:click="applyFormat('code')" attr:title="'行内代码'">&lt;/&gt; 代码</button>
+            <span class="fmt-sep"></span>
+            <button class="fmt-btn" on:click="applyFormat('link')" attr:title="'插入链接 (Ctrl+K)'">链接</button>
+            <button class="fmt-btn" on:click="applyFormat('image')" attr:title="'插入图片链接'">图片</button>
+          </div>
+          <div class="editor-stats">
+            <span>{{stats.chars}} 字</span>
+            <span>·</span>
+            <span>约 {{stats.minutes}} 分钟阅读</span>
+          </div>
+        </div>
+      </o-else>
+    </main>
+  </div>
+
+  <!-- ===== 删除确认层 ===== -->
+  <o-if :value="confirmOpen">
+    <div class="overlay" on:click="cancelDelete">
+      <div class="confirm-card" on:click="stopProp($event)">
+        <h3>删除这篇笔记？</h3>
+        <p>「{{pendingTitle}}」删除后将无法恢复</p>
+        <div class="confirm-actions">
+          <button class="ghost-btn" on:click="cancelDelete">取消</button>
+          <button class="danger-solid-btn" on:click="confirmDelete">删除</button>
+        </div>
+      </div>
+    </div>
+  </o-if>
+
+  <script>
+    export default async ({ load }) => {
+      const store = await load("./store.js");
+
+      return {
+        data: {
+          username: "",
+          searchText: "",
+          noteList: [],
+          currentId: "",
+          currentNote: null,
+          title: "",
+          content: "",
+          createdText: "",
+          editorVisible: false,
+          confirmOpen: false,
+          pendingDeleteId: "",
+          pendingTitle: "",
+          isDark: false,
+          mdMode: "edit",
+          previewHtml: "",
+          stats: { chars: 0, minutes: 1 },
+        },
+        proto: {
+          async refreshList() {
+            try {
+              this.noteList = await store.getMyNotes(this.searchText.trim());
+            } catch (e) {
+              this.handleError(e);
+            }
+          },
+          formatTime(ts) {
+            return store.formatTime(ts);
+          },
+          openNote(id) {
+            const note = this.noteList.find((n) => n.id === id);
+            if (!note) return;
+            // 取消上一笔记的待保存定时器，避免其用错数据
+            if (this._saveTimer) {
+              clearTimeout(this._saveTimer);
+              this._saveTimer = null;
+            }
+            this.currentId = id;
+            this.currentNote = note;
+            // 记录已保存快照：打开笔记的赋值不触发自动保存
+            this._savedTitle = note.title;
+            this._savedContent = note.content;
+            this.title = note.title;
+            this.content = note.content;
+            this.createdText = store.formatTime(note.updateTime);
+            this.editorVisible = true;
+            this.renderPreview();
+            this.updateStats();
+          },
+          switchMdMode(mode) {
+            // 窄屏不支持分屏，自动降级为预览
+            if (mode === "split" && window.innerWidth < 768) mode = "preview";
+            this.mdMode = mode;
+            this.renderPreview();
+          },
+          escapeHtml(src) {
+            return src
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
+          },
+          renderPreview() {
+            if (!window.marked) {
+              this.previewHtml = "<p>Markdown 解析器未加载</p>";
+              return;
+            }
+            // 先转义 HTML 标签，再解析 Markdown，防止注入
+            const escaped = this.escapeHtml(this.content || "");
+            let html = window.marked.parse(escaped, { breaks: true, gfm: true });
+            // 清理危险协议链接
+            html = html.replace(/(href|src)="javascript:[^"]*"/gi, '$1="#"');
+            this.previewHtml = html;
+          },
+          // ===== 格式工具栏 =====
+          applyFormat(kind) {
+            // 页面内容渲染在 o-page 的 shadow DOM 中：this.ele 为真实元素，shadowRoot 内查询
+            const ta = this.ele.shadowRoot.querySelector(".content-input");
+            if (!ta) return;
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            const val = this.content || "";
+            const selected = val.slice(start, end);
+
+            // 行级格式：作用于光标所在行，支持 toggle
+            const blockKinds = { h1: "# ", h2: "## ", h3: "### ", ul: "- ", quote: "> " };
+            if (blockKinds[kind]) {
+              this.toggleLinePrefix(blockKinds[kind], ta, start, end);
+              return;
+            }
+
+            let insert = "";
+            let selStart = start;
+            let selEnd = end;
+            switch (kind) {
+              case "bold": {
+                const t = selected || "粗体文字";
+                insert = `**${t}**`;
+                selStart = start + 2;
+                selEnd = selStart + t.length;
+                break;
+              }
+              case "italic": {
+                const t = selected || "斜体文字";
+                insert = `*${t}*`;
+                selStart = start + 1;
+                selEnd = selStart + t.length;
+                break;
+              }
+              case "code": {
+                if (selected.includes("\n")) {
+                  const t = selected || "代码";
+                  insert = `\`\`\`\n${t}\n\`\`\``;
+                  selStart = start + 4;
+                  selEnd = selStart + t.length;
+                } else {
+                  const t = selected || "代码";
+                  insert = `\`${t}\``;
+                  selStart = start + 1;
+                  selEnd = selStart + t.length;
+                }
+                break;
+              }
+              case "link": {
+                const text = selected || "链接文字";
+                insert = `[${text}](https://)`;
+                selStart = start + text.length + 3; // 光标落在 url 处
+                selEnd = selStart + 8; // 选中 https:// 便于直接输入
+                break;
+              }
+              case "image": {
+                const alt = selected || "图片描述";
+                insert = `![${alt}](https://)`;
+                selStart = start + alt.length + 4; // 光标落在 url 处
+                selEnd = selStart + 8; // 选中 https:// 便于直接输入
+                break;
+              }
+            }
+            this.content = val.slice(0, start) + insert + val.slice(end);
+            this.restoreSelection(ta, selStart, selEnd);
+          },
+          toggleLinePrefix(prefix, ta, start, end) {
+            const val = this.content || "";
+            const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+            let lineEnd = val.indexOf("\n", end);
+            if (lineEnd === -1) lineEnd = val.length;
+            const lineText = val.slice(lineStart, lineEnd);
+            const newLine = lineText.startsWith(prefix) ? lineText.slice(prefix.length) : prefix + lineText;
+            this.content = val.slice(0, lineStart) + newLine + val.slice(lineEnd);
+            const offset = newLine.length - lineText.length;
+            this.restoreSelection(ta, start + offset, end + offset);
+          },
+          restoreSelection(ta, s, e) {
+            requestAnimationFrame(() => {
+              ta.focus();
+              ta.setSelectionRange(s, e);
+            });
+          },
+          // ===== 快捷键 =====
+          handleShortcut(e) {
+            if (this.mdMode === "preview") return;
+            const ta = this.ele.shadowRoot.querySelector(".content-input");
+            if (!ta) return;
+            // shadow DOM 中 document.activeElement 是宿主元素，用 :focus 匹配判断
+            if (!ta.matches(":focus")) return;
+            if (e.key === "Tab") {
+              e.preventDefault();
+              const start = ta.selectionStart;
+              this.content = (this.content || "").slice(0, start) + "  " + (this.content || "").slice(ta.selectionEnd);
+              this.restoreSelection(ta, start + 2, start + 2);
+              return;
+            }
+            if (!(e.ctrlKey || e.metaKey)) return;
+            const k = e.key.toLowerCase();
+            if (k === "b") {
+              e.preventDefault();
+              this.applyFormat("bold");
+            } else if (k === "i") {
+              e.preventDefault();
+              this.applyFormat("italic");
+            } else if (k === "k") {
+              e.preventDefault();
+              this.applyFormat("link");
+            }
+          },
+          // ===== 字数统计 =====
+          updateStats() {
+            const chars = (this.content || "").replace(/\s/g, "").length;
+            this.stats.chars = chars;
+            this.stats.minutes = Math.max(1, Math.ceil(chars / 300));
+          },
+          addNote() {
+            // 打开本地草稿：后端要求 title/body 均非空，待用户输入后由自动保存创建
+            this.currentId = "";
+            this.currentNote = { id: "", title: "", content: "", updateTime: Date.now() };
+            this._savedTitle = "";
+            this._savedContent = "";
+            this.title = "";
+            this.content = "";
+            this.createdText = "尚未保存";
+            this.editorVisible = true;
+            this.renderPreview();
+            this.updateStats();
+          },
+          // 防抖自动保存：标题与内容均非空时才提交（后端校验 title/body 非空）
+          scheduleSave() {
+            if (!this.title.trim() || !this.content.trim()) return;
+            // 内容与已保存快照一致时无需提交（如打开笔记时的赋值）
+            if (this.title === this._savedTitle && this.content === this._savedContent) return;
+            clearTimeout(this._saveTimer);
+            this._saveTimer = setTimeout(async () => {
+              this._saveTimer = null;
+              try {
+                if (this.currentId) {
+                  await store.updateNote(this.currentId, { title: this.title, content: this.content });
+                } else {
+                  const note = await store.createNote(this.title, this.content);
+                  if (note) {
+                    this.currentId = note.id;
+                    this.currentNote = note;
+                    this.createdText = store.formatTime(note.updateTime);
+                  }
+                  this.refreshList();
+                }
+                // 保存成功后更新快照，避免重复提交
+                this._savedTitle = this.title;
+                this._savedContent = this.content;
+                this.showToast("已保存", "success");
+              } catch (e) {
+                this.handleError(e);
+              }
+            }, 800);
+          },
+          handleError(e) {
+            const msg = (e && e.message) || "操作失败";
+            // token 失效或未登录时回到登录页
+            if (/未登录|token|登录/.test(msg)) {
+              store.logout();
+              this.app.replace("./auth.html");
+              return;
+            }
+            this.showToast(msg, "error");
+          },
+          showToast(msg, type = "info") {
+            let box = this.ele.shadowRoot.querySelector(".toast-box");
+            if (!box) {
+              box = document.createElement("div");
+              box.className = "toast-box";
+              this.ele.shadowRoot.appendChild(box);
+            }
+            const t = document.createElement("div");
+            t.className = "toast " + type;
+            t.textContent = msg;
+            box.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+          },
+          clearSearch() {
+            this.searchText = "";
+          },
+          backToList() {
+            this.editorVisible = false;
+          },
+          askDelete() {
+            if (!this.currentNote) return;
+            this.pendingDeleteId = this.currentId;
+            this.pendingTitle = this.currentNote.title || "无标题";
+            this.confirmOpen = true;
+          },
+          async confirmDelete() {
+            const id = this.pendingDeleteId;
+            this.confirmOpen = false;
+            // 未保存的草稿直接丢弃，无需调用接口
+            if (id) {
+              try {
+                await store.deleteNote(id);
+              } catch (e) {
+                this.handleError(e);
+                return;
+              }
+            }
+            this.currentId = "";
+            this.currentNote = null;
+            this._savedTitle = "";
+            this._savedContent = "";
+            this.title = "";
+            this.content = "";
+            this.createdText = "";
+            this.previewHtml = "";
+            this.stats.chars = 0;
+            this.stats.minutes = 1;
+            this.refreshList();
+          },
+          cancelDelete() {
+            this.confirmOpen = false;
+          },
+          stopProp(e) {
+            e.stopPropagation();
+          },
+          toggleTheme() {
+            const dark = document.documentElement.getAttribute("data-theme") === "dark";
+            if (dark) {
+              document.documentElement.removeAttribute("data-theme");
+            } else {
+              document.documentElement.setAttribute("data-theme", "dark");
+            }
+            localStorage.setItem("note-app.theme", dark ? "light" : "dark");
+            this.isDark = !dark;
+          },
+          logout() {
+            store.logout();
+            this.app.replace("./auth.html");
+          },
+        },
+        watch: {
+          searchText() {
+            clearTimeout(this._searchTimer);
+            this._searchTimer = setTimeout(() => this.refreshList(), 300);
+          },
+          title() {
+            if (this.currentNote) this.currentNote.title = this.title;
+            this.scheduleSave();
+          },
+          content() {
+            if (this.currentNote) this.currentNote.content = this.content;
+            if (this.mdMode !== "edit") this.renderPreview();
+            this.updateStats();
+            this.scheduleSave();
+          },
+          confirmOpen(open) {
+            if (open) {
+              this._escHandler = (e) => {
+                if (e.key === "Escape") this.cancelDelete();
+              };
+              document.addEventListener("keydown", this._escHandler);
+            } else if (this._escHandler) {
+              document.removeEventListener("keydown", this._escHandler);
+              this._escHandler = null;
+            }
+          },
+        },
+        async ready() {
+          if (!store.isLoggedIn()) {
+            this.app.replace("./auth.html");
+            return;
+          }
+          // 校验 token 并获取当前用户
+          const me = await store.fetchMe();
+          if (!me) {
+            store.logout();
+            this.app.replace("./auth.html");
+            return;
+          }
+          this.username = me.username;
+          this.isDark = document.documentElement.getAttribute("data-theme") === "dark";
+          await this.refreshList();
+          // 注册编辑器快捷键（Ctrl+B / Ctrl+I / Ctrl+K / Tab）
+          this._shortcutHandler = (e) => this.handleShortcut(e);
+          document.addEventListener("keydown", this._shortcutHandler);
+        },
+        detached() {
+          if (this._escHandler) {
+            document.removeEventListener("keydown", this._escHandler);
+            this._escHandler = null;
+          }
+          if (this._shortcutHandler) {
+            document.removeEventListener("keydown", this._shortcutHandler);
+            this._shortcutHandler = null;
+          }
+          if (this._saveTimer) {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = null;
+          }
+          if (this._searchTimer) {
+            clearTimeout(this._searchTimer);
+            this._searchTimer = null;
+          }
+        },
+      };
+    };
+  </script>
+</template>

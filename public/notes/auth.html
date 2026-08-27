@@ -1,0 +1,423 @@
+<template page>
+  <style>
+    :host {
+      display: block;
+      height: 100%;
+    }
+    .auth-wrap {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .theme-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-card);
+      color: var(--color-card-fg);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+    .theme-btn:hover {
+      background: var(--color-muted);
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 36px 32px 32px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .brand h1 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--color-card-fg);
+    }
+    .brand p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--color-muted-fg);
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--color-muted);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    .tab {
+      flex: 1;
+      padding: 9px 0;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+    .tab.active {
+      background: var(--color-card);
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-card-fg);
+      margin-bottom: 6px;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap input {
+      width: 100%;
+      height: 44px;
+      padding: 0 40px 0 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-bg);
+      color: var(--color-card-fg);
+      font-size: 15px;
+      font-family: var(--font-sans);
+      transition: border-color var(--transition);
+    }
+    .input-wrap input:focus {
+      border-color: var(--color-ring);
+    }
+    .input-wrap input::placeholder {
+      color: var(--color-muted-fg);
+      opacity: 0.7;
+    }
+    .eye-btn {
+      position: absolute;
+      top: 50%;
+      right: 8px;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--color-muted-fg);
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .eye-btn:hover {
+      background: var(--color-muted);
+      color: var(--color-card-fg);
+    }
+    .field-error {
+      margin: 5px 0 0;
+      font-size: 12px;
+      color: var(--color-destructive);
+    }
+    .form-error {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+      color: var(--color-destructive);
+      font-size: 13px;
+    }
+    .form-success {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+      color: var(--color-primary);
+      font-size: 13px;
+    }
+    .submit-btn {
+      width: 100%;
+      height: 46px;
+      margin-top: 6px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: filter var(--transition);
+    }
+    .submit-btn:hover {
+      filter: brightness(0.94);
+    }
+    .switch-hint {
+      margin: 18px 0 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--color-muted-fg);
+    }
+    .switch-hint button {
+      border: none;
+      background: none;
+      padding: 0;
+      color: var(--color-primary);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+    }
+  </style>
+
+  <button class="theme-btn" on:click="toggleTheme" attr:title="isDark ? '切换到浅色模式' : '切换到深色模式'">
+    <o-if :value="!isDark">
+      <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M233.54,142.23a8,8,0,0,0-8-2,88.08,88.08,0,0,1-109.8-109.8,8,8,0,0,0-10-10,104.84,104.84,0,0,0-52.91,37A104,104,0,0,0,136,224a103.09,103.09,0,0,0,62.52-20.88,104.84,104.84,0,0,0,37-52.91A8,8,0,0,0,233.54,142.23ZM188.9,190.34A88,88,0,0,1,65.66,67.11a89,89,0,0,1,31.4-26A106,106,0,0,0,96,56,104.11,104.11,0,0,0,200,160a106,106,0,0,0,14.92-1.06A89,89,0,0,1,188.9,190.34Z"/>
+      </svg>
+    </o-if>
+    <o-else>
+      <svg width="20" height="20" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+        <path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/>
+      </svg>
+    </o-else>
+  </button>
+
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="26" height="26" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M229.66,58.34l-32-32a8,8,0,0,0-11.32,0l-96,96A8,8,0,0,0,88,128v32a8,8,0,0,0,8,8h32a8,8,0,0,0,5.66-2.34l96-96A8,8,0,0,0,229.66,58.34ZM124.69,152H104V131.31l64-64L188.69,88ZM200,76.69,179.31,56,192,43.31,212.69,64ZM224,128v80a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h80a8,8,0,0,1,0,16H48V208H208V128a8,8,0,0,1,16,0Z"/>
+          </svg>
+        </div>
+        <h1>墨记</h1>
+        <p>记录灵感，沉淀思考</p>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" class:active="mode === 'login'" on:click="switchMode('login')">登录</button>
+        <button class="tab" class:active="mode === 'register'" on:click="switchMode('register')">注册</button>
+      </div>
+
+      <o-if :value="errorMessage">
+        <div class="form-error" attr:role="'alert'">
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-128a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm16,72a8,8,0,1,1-8-8A8,8,0,0,1,136,160Z"/>
+          </svg>
+          <span>{{errorMessage}}</span>
+        </div>
+      </o-if>
+      <o-if :value="successMessage">
+        <div class="form-success">
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm41.86-113.05-45.51,45.52a8,8,0,0,1-11.31,0l-19-19a8,8,0,0,1,11.31-11.31l13.38,13.37,39.86-39.87a8,8,0,0,1,11.31,11.31Z"/>
+          </svg>
+          <span>{{successMessage}}</span>
+        </div>
+      </o-if>
+
+      <div class="field">
+        <label for="username-input">用户名</label>
+        <div class="input-wrap">
+          <input id="username-input" type="text" sync:value="username" placeholder="请输入用户名" autocomplete="username" on:keydown="handleKeydown">
+        </div>
+        <o-if :value="errors.username">
+          <p class="field-error">{{errors.username}}</p>
+        </o-if>
+      </div>
+
+      <div class="field">
+        <label for="password-input">密码</label>
+        <div class="input-wrap">
+          <input id="password-input" attr:type="showPassword ? 'text' : 'password'" sync:value="password" placeholder="请输入密码" autocomplete="current-password" on:keydown="handleKeydown">
+          <button class="eye-btn" type="button" on:click="togglePassword" attr:title="showPassword ? '隐藏密码' : '显示密码'">
+            <o-if :value="!showPassword">
+              <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.47,133.47,0,0,1,25,128,133.33,133.33,0,0,1,48.07,97.25C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.25A133.46,133.46,0,0,1,231.05,128C223.84,141.46,192.43,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/>
+              </svg>
+            </o-if>
+            <o-else>
+              <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M53.92,34.62A8,8,0,1,0,42.08,45.38L61.32,66.55C25,88.84,9.38,123.2,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208a127.11,127.11,0,0,0,52.07-10.83l22,24.21a8,8,0,1,0,11.84-10.76Zm47.33,75.84,41.67,45.85a32,32,0,0,1-41.67-45.85ZM128,192c-30.78,0-57.67-11.19-79.93-33.25A133.16,133.16,0,0,1,25,128c4.69-8.79,19.66-33.39,47.35-49.38l18,19.75a48,48,0,0,0,63.66,70l14.73,16.2A112,112,0,0,1,128,192Zm6-95.43a8,8,0,0,1,3-15.72,48.16,48.16,0,0,1,38.77,42.64,8,8,0,0,1-7.22,8.71,6.39,6.39,0,0,1-.75,0,8,8,0,0,1-8-7.26A32.09,32.09,0,0,0,134,96.57Zm113.28,34.69c-.42.94-10.55,23.37-33.36,43.8a8,8,0,1,1-10.67-11.92A132.77,132.77,0,0,0,231.05,128a133.15,133.15,0,0,0-23.12-30.77C185.67,75.19,158.78,64,128,64a118.37,118.37,0,0,0-19.36,1.57A8,8,0,1,1,106,49.79,134,134,0,0,1,128,48c34.88,0,66.57,13.26,91.66,38.35,18.83,18.83,27.3,37.62,27.65,38.41A8,8,0,0,1,247.31,131.26Z"/>
+              </svg>
+            </o-else>
+          </button>
+        </div>
+        <o-if :value="errors.password">
+          <p class="field-error">{{errors.password}}</p>
+        </o-if>
+      </div>
+
+      <o-if :value="mode === 'register'">
+        <div class="field">
+          <label for="confirm-input">确认密码</label>
+          <div class="input-wrap">
+            <input id="confirm-input" attr:type="showPassword ? 'text' : 'password'" sync:value="confirmPassword" placeholder="请再次输入密码" autocomplete="new-password" on:keydown="handleKeydown">
+          </div>
+          <o-if :value="errors.confirmPassword">
+            <p class="field-error">{{errors.confirmPassword}}</p>
+          </o-if>
+        </div>
+      </o-if>
+
+      <button class="submit-btn" on:click="submit">
+        <o-if :value="mode === 'login'">登 录</o-if>
+        <o-else>注 册</o-else>
+      </button>
+
+      <p class="switch-hint">
+        <o-if :value="mode === 'login'">
+          还没有账号？<button on:click="switchMode('register')">立即注册</button>
+        </o-if>
+        <o-else>
+          已有账号？<button on:click="switchMode('login')">直接登录</button>
+        </o-else>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    export default async ({ load }) => {
+      const store = await load("./store.js");
+
+      return {
+        data: {
+          mode: "login",
+          username: "",
+          password: "",
+          confirmPassword: "",
+          showPassword: false,
+          errorMessage: "",
+          successMessage: "",
+          errors: {},
+          isDark: false,
+        },
+        proto: {
+          switchMode(mode) {
+            this.mode = mode;
+            this.errorMessage = "";
+            this.successMessage = "";
+            this.errors = {};
+            this.password = "";
+            this.confirmPassword = "";
+          },
+          togglePassword() {
+            this.showPassword = !this.showPassword;
+          },
+          toggleTheme() {
+            const dark = document.documentElement.getAttribute("data-theme") === "dark";
+            if (dark) {
+              document.documentElement.removeAttribute("data-theme");
+            } else {
+              document.documentElement.setAttribute("data-theme", "dark");
+            }
+            localStorage.setItem("note-app.theme", dark ? "light" : "dark");
+            this.isDark = !dark;
+          },
+          handleKeydown(e) {
+            if (e.key === "Enter") this.submit();
+          },
+          submit() {
+            if (this.mode === "login") this.doLogin();
+            else this.doRegister();
+          },
+          async doLogin() {
+            const errors = {};
+            if (!this.username.trim()) errors.username = "请输入用户名";
+            if (!this.password) errors.password = "请输入密码";
+            if (Object.keys(errors).length) {
+              this.errors = errors;
+              this.errorMessage = "请检查表单填写是否正确";
+              return;
+            }
+            this.errorMessage = "";
+            this.successMessage = "";
+            const res = await store.login(this.username.trim(), this.password);
+            if (!res.ok) {
+              this.errorMessage = res.message;
+              return;
+            }
+            this.app.goto("./main.html");
+          },
+          async doRegister() {
+            const errors = {};
+            const name = this.username.trim();
+            if (name.length < 2) {
+              errors.username = "用户名至少 2 个字符";
+            }
+            if (this.password.length < 6) {
+              errors.password = "密码至少 6 位";
+            }
+            if (this.confirmPassword !== this.password) {
+              errors.confirmPassword = "两次输入的密码不一致";
+            }
+            if (Object.keys(errors).length) {
+              this.errors = errors;
+              this.errorMessage = "请检查表单填写是否正确";
+              return;
+            }
+            this.errorMessage = "";
+            const res = await store.register(name, this.password);
+            if (!res.ok) {
+              this.errorMessage = res.message;
+              return;
+            }
+            // 后端注册不返回 token，注册成功后切换到登录模式
+            this.successMessage = "注册成功，请登录";
+            this.mode = "login";
+            this.password = "";
+            this.confirmPassword = "";
+          },
+        },
+        async ready() {
+          // 已登录且 token 有效时直接进入主界面
+          if (store.isLoggedIn()) {
+            const me = await store.fetchMe();
+            if (me) {
+              this.app.replace("./main.html");
+              return;
+            }
+            store.logout(); // token 无效则清除
+          }
+          this.isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        },
+      };
+    };
+  </script>
+</template>

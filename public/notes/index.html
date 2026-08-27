@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>墨记 · 笔记管理</title>
+    <!-- ofa.js 核心 -->
+    <script src="https://cdn.jsdelivr.net/gh/ofajs/ofa.js/dist/ofa.mjs" type="module"></script>
+    <!-- Markdown 解析器（marked，UMD 全局 window.marked） -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/lib/marked.umd.min.js"></script>
+    <!-- 中文字体：Noto Sans SC（界面）+ Noto Serif SC（笔记标题） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== 设计令牌（Flat Design · Productivity Tool 调色板）===== */
+        :root {
+            --color-primary: #0D9488;
+            --color-primary-strong: #0F766E;
+            --color-on-primary: #FFFFFF;
+            --color-secondary: #14B8A6;
+            --color-accent: #EA580C;
+            --color-on-accent: #000000;
+            --color-bg: #F0FDFA;
+            --color-fg: #134E4A;
+            --color-card: #FFFFFF;
+            --color-card-fg: #134E4A;
+            --color-muted: #E8F1F4;
+            --color-muted-fg: #475569;
+            --color-border: #99F6E4;
+            --color-destructive: #DC2626;
+            --color-on-destructive: #FFFFFF;
+            --color-ring: #0D9488;
+            --radius: 10px;
+            --radius-sm: 8px;
+            --transition: 180ms ease;
+            --font-sans: "Noto Sans SC", "Inter", system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+            --font-serif: "Noto Serif SC", "Cormorant Garamond", Georgia, serif;
+        }
+        html[data-theme="dark"] {
+            --color-primary: #2DD4BF;
+            --color-primary-strong: #5EEAD4;
+            --color-on-primary: #042F2E;
+            --color-secondary: #14B8A6;
+            --color-accent: #FB923C;
+            --color-on-accent: #1C1917;
+            --color-bg: #042F2E;
+            --color-fg: #CCFBF1;
+            --color-card: #134E4A;
+            --color-card-fg: #CCFBF1;
+            --color-muted: #115E59;
+            --color-muted-fg: #99F6E4;
+            --color-border: #134E4A;
+            --color-destructive: #F87171;
+            --color-on-destructive: #1C1917;
+            --color-ring: #2DD4BF;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+        body {
+            background: var(--color-bg);
+            color: var(--color-fg);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            line-height: 1.6;
+            transition: background var(--transition), color var(--transition);
+        }
+        o-app {
+            height: 100%;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        :focus-visible {
+            outline: 2px solid var(--color-ring);
+            outline-offset: 2px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+    </style>
+    <script>
+        // 首屏主题初始化，避免深色模式闪烁
+        if (localStorage.getItem("note-app.theme") === "dark") {
+            document.documentElement.setAttribute("data-theme", "dark");
+        }
+    </script>
+</head>
+<body>
+    <l-m src="https://cdn.jsdelivr.net/gh/ofajs/ofa.js/libs/router/dist/router.min.mjs"></l-m>
+    <o-router fix-body>
+        <o-app src="./app-config.js"></o-app>
+    </o-router>
+</body>
+</html>
