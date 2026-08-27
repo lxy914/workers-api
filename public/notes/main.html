@@ -120,6 +120,43 @@
       overflow-y: auto;
       padding: 0 8px 8px;
     }
+    /* ===== 时间分组 ===== */
+    .note-group {
+      margin-bottom: 2px;
+    }
+    .group-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 12px 6px;
+      border: none;
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: color var(--transition);
+    }
+    .group-head:hover {
+      color: var(--color-card-fg);
+    }
+    .group-count {
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: var(--color-muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .group-arrow {
+      margin-left: auto;
+      color: var(--color-muted-fg);
+      transition: transform var(--transition);
+    }
+    .group-arrow.open {
+      transform: rotate(90deg);
+    }
     .note-item {
       padding: 12px 12px;
       border-radius: var(--radius-sm);
@@ -706,11 +743,24 @@
       </button>
 
       <div class="list-area">
-        <o-fill :value="noteList">
-          <div class="note-item" class:active="$data.id === $host.currentId" on:click="$host.openNote($data.id)">
-            <div class="note-item-title">{{$data.title || '无标题'}}</div>
-            <div class="note-item-meta">{{$host.formatTime($data.updateTime)}}</div>
-            <div class="note-item-preview">{{$data.content}}</div>
+        <o-fill :value="noteGroups">
+          <div class="note-group">
+            <button class="group-head" on:click="$host.toggleGroup($data.key)" attr:aria-expanded="!$host.isGroupCollapsed($data.key)">
+              <span class="group-title">{{$data.key}}</span>
+              <span class="group-count">{{$data.items.length}}</span>
+              <svg class="group-arrow" class:open="!$host.isGroupCollapsed($data.key)" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M101.66,50a8,8,0,0,1,0,11.32L67.31,96l34.35,34.34a8,8,0,0,1-11.32,11.32l-40-40a8,8,0,0,1,0-11.32l40-40A8,8,0,0,1,101.66,50Z"/>
+              </svg>
+            </button>
+            <o-if :value="!$host.isGroupCollapsed($data.key)">
+              <o-fill :value="$data.items">
+                <div class="note-item" class:active="$data.id === $host.currentId" on:click="$host.openNote($data.id)">
+                  <div class="note-item-title">{{$data.title || '无标题'}}</div>
+                  <div class="note-item-meta">{{$host.formatTime($data.updateTime)}}</div>
+                  <div class="note-item-preview">{{$data.content}}</div>
+                </div>
+              </o-fill>
+            </o-if>
           </div>
         </o-fill>
         <o-if :value="noteList.length === 0 && searchText">
@@ -838,6 +888,14 @@
           username: "",
           searchText: "",
           noteList: [],
+          noteGroups: [],
+          collapsedGroups: (() => {
+            try {
+              return JSON.parse(localStorage.getItem("note-app.collapsed-groups") || "{}");
+            } catch {
+              return {};
+            }
+          })(),
           currentId: "",
           currentNote: null,
           title: "",
@@ -856,9 +914,48 @@
           async refreshList() {
             try {
               this.noteList = await store.getMyNotes(this.searchText.trim());
+              const searchMode = !!this.searchText.trim();
+              const groups = this.groupNotes(this.noteList);
+              // 未记录偏好的组：搜索时全部展开，否则仅第一组默认展开
+              const next = { ...this.collapsedGroups };
+              groups.forEach((g, i) => {
+                if (!(g.key in next)) next[g.key] = searchMode ? false : i > 0;
+              });
+              // 当前打开的笔记所在组强制展开，避免编辑中的笔记在列表中“消失”
+              const current = this.noteList.find((n) => n.id === this.currentId);
+              if (current) next[this.groupKeyOf(current.updateTime)] = false;
+              this.collapsedGroups = next;
+              this.noteGroups = groups;
             } catch (e) {
               this.handleError(e);
             }
+          },
+          // 按时间分组：今天 / 近3天 / 近7天 / 近30天 / 更早
+          groupKeyOf(ts) {
+            const d = new Date(ts);
+            const startOfDay = (v) => {
+              const t = new Date(v);
+              return new Date(t.getFullYear(), t.getMonth(), t.getDate()).getTime();
+            };
+            const diffDays = Math.round((startOfDay(Date.now()) - startOfDay(d)) / 86400000);
+            if (diffDays <= 0) return "今天";
+            if (diffDays <= 3) return "近3天";
+            if (diffDays <= 7) return "近7天";
+            if (diffDays <= 30) return "近30天";
+            return "更早";
+          },
+          groupNotes(list) {
+            const order = ["今天", "近3天", "近7天", "近30天", "更早"];
+            return order
+              .map((key) => ({ key, items: list.filter((n) => this.groupKeyOf(n.updateTime) === key) }))
+              .filter((g) => g.items.length > 0);
+          },
+          toggleGroup(key) {
+            this.collapsedGroups = { ...this.collapsedGroups, [key]: !this.collapsedGroups[key] };
+            localStorage.setItem("note-app.collapsed-groups", JSON.stringify(this.collapsedGroups));
+          },
+          isGroupCollapsed(key) {
+            return !!this.collapsedGroups[key];
           },
           formatTime(ts) {
             return store.formatTime(ts);
