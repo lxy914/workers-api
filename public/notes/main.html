@@ -324,6 +324,33 @@
       background: color-mix(in srgb, var(--color-destructive) 12%, transparent);
       color: var(--color-destructive);
     }
+    .save-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      border: none;
+      background: transparent;
+      color: var(--color-muted-fg);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      padding: 8px 10px;
+      min-height: 40px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition), color var(--transition);
+    }
+    .save-btn.saved {
+      color: var(--color-muted-fg);
+      cursor: default;
+    }
+    .save-btn.dirty {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+    .save-btn.dirty:hover {
+      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    }
     .editor-body {
       flex: 1;
       display: flex;
@@ -822,6 +849,20 @@
             </svg>
             创建于 {{createdText}}
           </span>
+          <button class="save-btn" class:saved="!isDirty" class:dirty="isDirty" on:click="saveNote" attr:disabled="!isDirty" attr:title="isDirty ? '保存 (Ctrl+S)' : '已保存'">
+            <o-if :value="isDirty">
+              <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM216,192H40V64H80v40a8,8,0,0,0,8,8h80a8,8,0,0,0,8-8V64h40ZM96,64h64V96H96Z"/>
+              </svg>
+              保存
+            </o-if>
+            <o-else>
+              <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/>
+              </svg>
+              已保存
+            </o-else>
+          </button>
           <button class="danger-btn" on:click="askDelete">
             <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
               <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>
@@ -879,6 +920,20 @@
     </div>
   </o-if>
 
+  <!-- ===== 未保存修改确认层 ===== -->
+  <o-if :value="dirtyConfirmOpen">
+    <div class="overlay" on:click="_cancelDirtyDiscard">
+      <div class="confirm-card" on:click="stopProp($event)">
+        <h3>有未保存的修改</h3>
+        <p>当前笔记的修改尚未保存，切换后将丢失这些修改</p>
+        <div class="confirm-actions">
+          <button class="ghost-btn" on:click="_cancelDirtyDiscard">取消</button>
+          <button class="danger-solid-btn" on:click="_confirmDirtyDiscard">放弃修改</button>
+        </div>
+      </div>
+    </div>
+  </o-if>
+
   <script>
     export default async ({ load }) => {
       const store = await load("./store.js");
@@ -906,6 +961,10 @@
           pendingDeleteId: "",
           pendingTitle: "",
           isDark: false,
+          isDirty: false,
+          _savedTitle: "",
+          _savedContent: "",
+          dirtyConfirmOpen: false,
           mdMode: "edit",
           previewHtml: "",
           stats: { chars: 0, minutes: 1 },
@@ -961,20 +1020,26 @@
             return store.formatTime(ts);
           },
           openNote(id) {
+            // 有未保存修改时，先提示用户
+            if (this.isDirty && this.currentId !== id) {
+              this._pendingOpenId = id;
+              this._showDirtyConfirm();
+              return;
+            }
+            this._doOpenNote(id);
+          },
+          _doOpenNote(id) {
             const note = this.noteList.find((n) => n.id === id);
             if (!note) return;
-            // 取消上一笔记的待保存定时器，避免其用错数据
-            if (this._saveTimer) {
-              clearTimeout(this._saveTimer);
-              this._saveTimer = null;
-            }
             this.currentId = id;
             this.currentNote = note;
-            // 记录已保存快照：打开笔记的赋值不触发自动保存
+            // 记录已保存快照：打开笔记的赋值不标记为 dirty
             this._savedTitle = note.title;
             this._savedContent = note.content;
             this.title = note.title;
             this.content = note.content;
+            this.isDirty = false;
+            this.mdMode = "preview";
             this.createdText = store.formatTime(note.updateTime);
             this.editorVisible = true;
             this.renderPreview();
@@ -1105,7 +1170,10 @@
             }
             if (!(e.ctrlKey || e.metaKey)) return;
             const k = e.key.toLowerCase();
-            if (k === "b") {
+            if (k === "s") {
+              e.preventDefault();
+              this.saveNote();
+            } else if (k === "b") {
               e.preventDefault();
               this.applyFormat("bold");
             } else if (k === "i") {
@@ -1123,46 +1191,88 @@
             this.stats.minutes = Math.max(1, Math.ceil(chars / 300));
           },
           addNote() {
-            // 打开本地草稿：后端要求 title/body 均非空，待用户输入后由自动保存创建
+            // 有未保存修改时，先提示用户
+            if (this.isDirty) {
+              this._pendingAddNote = true;
+              this._showDirtyConfirm();
+              return;
+            }
+            this._doAddNote();
+          },
+          _doAddNote() {
+            // 打开本地草稿，待用户手动保存时创建
             this.currentId = "";
             this.currentNote = { id: "", title: "", content: "", updateTime: Date.now() };
             this._savedTitle = "";
             this._savedContent = "";
             this.title = "";
             this.content = "";
+            this.isDirty = false;
             this.createdText = "尚未保存";
             this.editorVisible = true;
             this.renderPreview();
             this.updateStats();
           },
-          // 防抖自动保存：标题与内容均非空时才提交（后端校验 title/body 非空）
-          scheduleSave() {
-            if (!this.title.trim() || !this.content.trim()) return;
-            // 内容与已保存快照一致时无需提交（如打开笔记时的赋值）
-            if (this.title === this._savedTitle && this.content === this._savedContent) return;
-            clearTimeout(this._saveTimer);
-            this._saveTimer = setTimeout(async () => {
-              this._saveTimer = null;
-              try {
-                if (this.currentId) {
-                  await store.updateNote(this.currentId, { title: this.title, content: this.content });
-                } else {
-                  const note = await store.createNote(this.title, this.content);
-                  if (note) {
-                    this.currentId = note.id;
-                    this.currentNote = note;
-                    this.createdText = store.formatTime(note.updateTime);
-                  }
-                  this.refreshList();
+          // 手动保存
+          async saveNote() {
+            if (!this.isDirty) return;
+            if (!this.title.trim() || !this.content.trim()) {
+              this.showToast("标题和内容不能为空", "error");
+              return;
+            }
+            try {
+              if (this.currentId) {
+                await store.updateNote(this.currentId, { title: this.title, content: this.content });
+              } else {
+                const note = await store.createNote(this.title, this.content);
+                if (note) {
+                  this.currentId = note.id;
+                  this.currentNote = note;
+                  this.createdText = store.formatTime(note.updateTime);
                 }
-                // 保存成功后更新快照，避免重复提交
-                this._savedTitle = this.title;
-                this._savedContent = this.content;
-                this.showToast("已保存", "success");
-              } catch (e) {
-                this.handleError(e);
+                this.refreshList();
               }
-            }, 800);
+              // 保存成功后更新快照，标记已保存
+              this._savedTitle = this.title;
+              this._savedContent = this.content;
+              this.isDirty = false;
+              this.showToast("已保存", "success");
+            } catch (e) {
+              this.handleError(e);
+            }
+          },
+          // 检查是否有未保存修改（仅在编辑笔记时）
+          checkDirty() {
+            if (!this.currentNote) return;
+            this.isDirty = this.title !== this._savedTitle || this.content !== this._savedContent;
+          },
+          // 未保存修改确认
+          _showDirtyConfirm() {
+            this.dirtyConfirmOpen = true;
+          },
+          _confirmDirtyDiscard() {
+            this.dirtyConfirmOpen = false;
+            this.isDirty = false;
+            // 还原当前笔记的 title/content 到保存前的快照
+            if (this.currentNote) {
+              this.currentNote.title = this._savedTitle;
+              this.currentNote.content = this._savedContent;
+            }
+            this.title = this._savedTitle;
+            this.content = this._savedContent;
+            if (this._pendingOpenId) {
+              const id = this._pendingOpenId;
+              this._pendingOpenId = null;
+              this._doOpenNote(id);
+            } else if (this._pendingAddNote) {
+              this._pendingAddNote = false;
+              this._doAddNote();
+            }
+          },
+          _cancelDirtyDiscard() {
+            this.dirtyConfirmOpen = false;
+            this._pendingOpenId = null;
+            this._pendingAddNote = false;
           },
           handleError(e) {
             const msg = (e && e.message) || "操作失败";
@@ -1215,6 +1325,7 @@
             this.currentNote = null;
             this._savedTitle = "";
             this._savedContent = "";
+            this.isDirty = false;
             this.title = "";
             this.content = "";
             this.createdText = "";
@@ -1251,13 +1362,13 @@
           },
           title() {
             if (this.currentNote) this.currentNote.title = this.title;
-            this.scheduleSave();
+            this.checkDirty();
           },
           content() {
             if (this.currentNote) this.currentNote.content = this.content;
             if (this.mdMode !== "edit") this.renderPreview();
             this.updateStats();
-            this.scheduleSave();
+            this.checkDirty();
           },
           confirmOpen(open) {
             if (open) {
@@ -1286,9 +1397,17 @@
           this.username = me.username;
           this.isDark = document.documentElement.getAttribute("data-theme") === "dark";
           await this.refreshList();
-          // 注册编辑器快捷键（Ctrl+B / Ctrl+I / Ctrl+K / Tab）
+          // 注册编辑器快捷键（Ctrl+B / Ctrl+I / Ctrl+K / Ctrl+S / Tab）
           this._shortcutHandler = (e) => this.handleShortcut(e);
           document.addEventListener("keydown", this._shortcutHandler);
+          // 离开页面时提示未保存修改
+          this._beforeUnloadHandler = (e) => {
+            if (this.isDirty) {
+              e.preventDefault();
+              e.returnValue = "";
+            }
+          };
+          window.addEventListener("beforeunload", this._beforeUnloadHandler);
         },
         detached() {
           if (this._escHandler) {
@@ -1299,13 +1418,13 @@
             document.removeEventListener("keydown", this._shortcutHandler);
             this._shortcutHandler = null;
           }
-          if (this._saveTimer) {
-            clearTimeout(this._saveTimer);
-            this._saveTimer = null;
-          }
           if (this._searchTimer) {
             clearTimeout(this._searchTimer);
             this._searchTimer = null;
+          }
+          if (this._beforeUnloadHandler) {
+            window.removeEventListener("beforeunload", this._beforeUnloadHandler);
+            this._beforeUnloadHandler = null;
           }
         },
       };
