@@ -20,22 +20,39 @@ const owner_or_admin = createMiddleware<{ Bindings: CloudflareBindings; Variable
 })
 
 post.get("/", async (c) => {
-    const keyword = c.req.query('keyword') || ''
+    const keyword = (c.req.query('keyword') || '').trim()
     const isAdmin = c.get('role') === 'admin'
     let statement, params: (string | number)[]
     if (keyword) {
-        statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.title like ? order by p.id desc"
-        params = ["%" + keyword + "%"]
+        if ([...keyword].length >= 3) {
+            // FTS5 trigram 全文搜索：整体包成短语查询保持子串语义，内嵌双引号转义防止 MATCH 语法报错
+            const phrase = '"' + keyword.replace(/"/g, '""') + '"'
+            const from = "from t_post_fts f join t_post p on p.id = f.rowid left join t_user u on p.user_id = u.id"
+            if (isAdmin) {
+                statement = `select p.*, u.username as author ${from} where t_post_fts match ? order by bm25(t_post_fts)`
+                params = [phrase]
+            } else {
+                // 非管理员只能看到自己创建的文章
+                statement = `select p.*, u.username as author ${from} where t_post_fts match ? and p.user_id = ? order by bm25(t_post_fts)`
+                params = [phrase, c.get('uid')]
+            }
+        } else {
+            // 1-2 字关键词 trigram 无法匹配（token 至少 3 字符），LIKE 兜底保持子串语义
+            const like = "%" + keyword + "%"
+            if (isAdmin) {
+                statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.title like ? or p.body like ? order by p.id desc"
+                params = [like, like]
+            } else {
+                // 非管理员只能看到自己创建的文章
+                statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where (p.title like ? or p.body like ?) and p.user_id = ? order by p.id desc"
+                params = [like, like, c.get('uid')]
+            }
+        }
     } else {
         statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id order by p.id desc"
         params = []
-    }
-    if (!isAdmin) {
-        // 非管理员只能看到自己创建的文章
-        if (keyword) {
-            statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.title like ? and p.user_id = ? order by p.id desc"
-            params = ["%" + keyword + "%", c.get('uid')]
-        } else {
+        if (!isAdmin) {
+            // 非管理员只能看到自己创建的文章
             statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.user_id = ? order by p.id desc"
             params = [c.get('uid')]
         }

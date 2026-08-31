@@ -53,3 +53,38 @@ create table if not exists t_login_fail (
   fail_time integer
 );
 create index if not exists idx_login_fail_ip_time on t_login_fail(ip, fail_time);
+
+-- ============================================================
+-- 文章全文索引（FTS5）
+--
+-- 用途：/api/post?keyword= 搜索接口，支持标题+正文全文搜索
+-- 说明：
+--   - 使用 external content 表（content='t_post'），不冗余存储原文
+--   - trigram 分词：按 3 字符子串切 token，支持中英文任意子串匹配
+--     （1-2 字关键词由接口层 LIKE 兜底，trigram 无法匹配短词）
+--   - 触发器自动同步增删改，已有数据通过 rebuild 回填
+--   - 幂等：重复执行仅重建索引，不产生副作用
+-- ============================================================
+create virtual table if not exists t_post_fts using fts5(
+  title, body,
+  content='t_post',
+  content_rowid='id',
+  tokenize='trigram'
+);
+
+-- 新增文章时同步索引
+create trigger if not exists t_post_fts_ai after insert on t_post begin
+  insert into t_post_fts(rowid, title, body) values (new.id, new.title, new.body);
+end;
+-- 删除文章时同步索引
+create trigger if not exists t_post_fts_ad after delete on t_post begin
+  insert into t_post_fts(t_post_fts, rowid, title, body) values('delete', old.id, old.title, old.body);
+end;
+-- 更新文章时同步索引（先删旧索引再插新索引）
+create trigger if not exists t_post_fts_au after update on t_post begin
+  insert into t_post_fts(t_post_fts, rowid, title, body) values('delete', old.id, old.title, old.body);
+  insert into t_post_fts(rowid, title, body) values (new.id, new.title, new.body);
+end;
+
+-- 回填已有数据（rebuild 清空并重建整个索引；不能在事务内执行，wrangler 逐条提交无影响）
+insert into t_post_fts(t_post_fts) values('rebuild');
