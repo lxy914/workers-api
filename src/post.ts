@@ -40,20 +40,20 @@ post.get("/", async (c) => {
             // 1-2 字关键词 trigram 无法匹配（token 至少 3 字符），LIKE 兜底保持子串语义
             const like = "%" + keyword + "%"
             if (isAdmin) {
-                statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.title like ? or p.body like ? order by p.id desc"
+                statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.title like ? or p.body like ? order by p.update_time desc"
                 params = [like, like]
             } else {
                 // 非管理员只能看到自己创建的文章
-                statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where (p.title like ? or p.body like ?) and p.user_id = ? order by p.id desc"
+                statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where (p.title like ? or p.body like ?) and p.user_id = ? order by p.update_time desc"
                 params = [like, like, c.get('uid')]
             }
         }
     } else {
-        statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id order by p.id desc"
+        statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id order by p.update_time desc"
         params = []
         if (!isAdmin) {
             // 非管理员只能看到自己创建的文章
-            statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.user_id = ? order by p.id desc"
+            statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.user_id = ? order by p.update_time desc"
             params = [c.get('uid')]
         }
     }
