@@ -383,7 +383,7 @@
       opacity: 0.6;
     }
 
-    /* ===== Markdown 工具栏 ===== */
+    /* ===== 编辑/预览/分屏 模式切换 ===== */
     .md-toolbar {
       display: flex;
       gap: 4px;
@@ -413,46 +413,6 @@
       background: var(--color-card);
       color: var(--color-primary);
       font-weight: 700;
-    }
-
-    /* ===== 格式工具栏 ===== */
-    .fmt-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      margin-top: 8px;
-      flex-wrap: wrap;
-    }
-    .fmt-toolbar.hidden {
-      display: none;
-    }
-    .fmt-btn {
-      padding: 4px 10px;
-      border: none;
-      border-radius: 6px;
-      background: transparent;
-      color: var(--color-muted-fg);
-      font-size: 13px;
-      font-family: var(--font-sans);
-      cursor: pointer;
-      min-height: 32px;
-      transition: background var(--transition), color var(--transition);
-    }
-    .fmt-btn:hover {
-      background: var(--color-muted);
-      color: var(--color-card-fg);
-    }
-    .fmt-btn b {
-      font-weight: 800;
-    }
-    .fmt-btn i {
-      font-style: italic;
-    }
-    .fmt-sep {
-      width: 1px;
-      height: 18px;
-      background: var(--color-border);
-      margin: 0 6px;
     }
 
     /* ===== Markdown 编辑/预览双栏 ===== */
@@ -597,9 +557,8 @@
       display: flex;
       justify-content: flex-end;
       gap: 8px;
-      padding: 10px 0 2px;
-      margin-top: 8px;
-      border-top: 1px solid var(--color-border);
+      padding: 4px 0 2px;
+      margin-top: 12px;
       font-size: 12px;
       color: var(--color-muted-fg);
       white-space: nowrap;
@@ -879,23 +838,8 @@
             <button class="md-tab md-tab-split" class:active="mdMode === 'split'" on:click="switchMdMode('split')">分屏</button>
           </div>
           <div class="md-content">
-            <textarea class="content-input" class:hidden="mdMode === 'preview'" sync:value="content" placeholder="开始书写……（支持 Markdown 语法）"></textarea>
+            <textarea class="content-input" class:hidden="mdMode === 'preview'" sync:value="content" placeholder="开始书写……（Markdown 语法；Ctrl+B 加粗 / Ctrl+I 斜体 / Ctrl+K 链接）"></textarea>
             <div class="md-preview" class:hidden="mdMode === 'edit'" :html="previewHtml"></div>
-          </div>
-          <div class="fmt-toolbar" class:hidden="mdMode === 'preview'" role="toolbar" attr:aria-label="'格式工具栏'">
-            <button class="fmt-btn" on:click="applyFormat('h1')" attr:title="'一级标题'">H1</button>
-            <button class="fmt-btn" on:click="applyFormat('h2')" attr:title="'二级标题'">H2</button>
-            <button class="fmt-btn" on:click="applyFormat('h3')" attr:title="'三级标题'">H3</button>
-            <span class="fmt-sep"></span>
-            <button class="fmt-btn" on:click="applyFormat('bold')" attr:title="'加粗 (Ctrl+B)'"><b>B</b></button>
-            <button class="fmt-btn" on:click="applyFormat('italic')" attr:title="'斜体 (Ctrl+I)'"><i>I</i></button>
-            <span class="fmt-sep"></span>
-            <button class="fmt-btn" on:click="applyFormat('ul')" attr:title="'无序列表'">• 列表</button>
-            <button class="fmt-btn" on:click="applyFormat('quote')" attr:title="'引用'">引用</button>
-            <button class="fmt-btn" on:click="applyFormat('code')" attr:title="'行内代码'">&lt;/&gt; 代码</button>
-            <span class="fmt-sep"></span>
-            <button class="fmt-btn" on:click="applyFormat('link')" attr:title="'插入链接 (Ctrl+K)'">链接</button>
-            <button class="fmt-btn" on:click="applyFormat('image')" attr:title="'插入图片链接'">图片</button>
           </div>
           <div class="editor-stats">
             <span>{{stats.chars}} 字</span>
@@ -1071,7 +1015,7 @@
             html = html.replace(/(href|src)="javascript:[^"]*"/gi, '$1="#"');
             this.previewHtml = html;
           },
-          // ===== 格式工具栏 =====
+          // ===== 快捷键格式化 =====
           applyFormat(kind) {
             // 页面内容渲染在 o-page 的 shadow DOM 中：this.ele 为真实元素，shadowRoot 内查询
             const ta = this.ele.shadowRoot.querySelector(".content-input");
