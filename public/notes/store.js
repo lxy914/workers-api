@@ -1,4 +1,4 @@
-// 数据层：对接 workers-api 后端接口（参考 post.html 的 api 封装）
+// 数据层：对接 workers-api 后端接口
 // 用户 / 笔记数据存于服务端 D1，token 存 localStorage
 
 const TOKEN_KEY = "note-app.token";
@@ -60,13 +60,14 @@ export function logout() {
 
 // ==================== 笔记 ====================
 
-// 后端字段映射：t_post.title/body/update_time -> 前端 title/content/updateTime
+// 后端字段映射：t_post.title/body/update_time/create_time -> 前端 title/content/updateTime/createTime
 function mapPost(p) {
   return {
     id: p.id,
     title: p.title || "",
     content: p.body || "",
     author: p.author,
+    createTime: p.create_time,
     updateTime: p.update_time,
   };
 }

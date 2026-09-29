@@ -985,7 +985,7 @@
             this.content = note.content;
             this.isDirty = false;
             this.mdMode = "preview";
-            this.createdText = store.formatTime(note.updateTime);
+            this.createdText = store.formatTime(note.createTime);
             this.editorVisible = true;
             this.renderPreview();
             this.updateStats();
@@ -1147,7 +1147,7 @@
           _doAddNote() {
             // 打开本地草稿，待用户手动保存时创建
             this.currentId = "";
-            this.currentNote = { id: "", title: "", content: "", updateTime: Date.now() };
+            this.currentNote = { id: "", title: "", content: "", createTime: Date.now(), updateTime: Date.now() };
             this._savedTitle = "";
             this._savedContent = "";
             this.title = "";
@@ -1173,7 +1173,7 @@
                 if (note) {
                   this.currentId = note.id;
                   this.currentNote = note;
-                  this.createdText = store.formatTime(note.updateTime);
+                  this.createdText = store.formatTime(note.createTime);
                 }
                 this.refreshList();
               }
