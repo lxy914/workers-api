@@ -11,7 +11,7 @@
 | 数据库 | Cloudflare D1 (SQLite) |
 | 认证 | JWT (`hono/jwt`) + PBKDF2 密码哈希 |
 | 前端 | ofa.js 墨记笔记应用（Markdown 编辑，移动/桌面自适应） |
-| 部署 | Wrangler v4（`npm run deploy` 手动部署） |
+| 部署 | Wrangler v4 + GitHub 推送自动部署（Cloudflare GitHub 集成） |
 
 ## 项目结构
 
@@ -111,7 +111,7 @@ npx wrangler d1 execute workers-api --local --file=init.sql  # 初始化数据�
 
 ## 部署
 
-- 手动执行 `npm run deploy`（wrangler deploy --minify）部署到 Cloudflare Workers
+- 推送 `master` 分支到 GitHub 后自动触发部署（Cloudflare 控制台的 GitHub 集成，仓库内无 workflow 文件）
 - 数据库结构变更需手动执行 `npx wrangler d1 execute workers-api --remote`（先迁移库，再部署代码）
 
 ## 配置说明
