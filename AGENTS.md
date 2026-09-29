@@ -118,5 +118,6 @@ npx wrangler d1 execute workers-api --local --file=init.sql  # 初始化数据�
 
 ### wrangler.jsonc
 - `DB`: D1 数据库绑定
+- `durable_objects`: bindings 已清空（聊天功能已下线），migrations 保留历史 v1-v4：v4 为 `deleted_classes: [ChatRoom]`，用于回收生产环境存量 ChatRoom 实例（直接删除绑定会报 10064）
 - `open_register`: 注册开关环境变量
 - `jwt_secret`: JWT 签名密钥（敏感信息，本地用 `.dev.vars`，生产用 `wrangler secret put`）
