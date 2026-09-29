@@ -23,33 +23,5 @@
 			"database_name": "workers-api",
 			"database_id": "7473a062-eb13-4dc8-bcc3-6960fc2fe576"
 		}
-	],
-	"durable_objects": {
-		"bindings": [
-			{
-				"class_name": "ChatRoom",
-				"name": "CHAT"
-			}
-		]
-	},
-	"migrations": [
-		{
-			"tag": "v1",
-			"new_sqlite_classes": [
-				"Counter"
-			]
-		},
-		{
-			"tag": "v2",
-			"new_sqlite_classes": [
-				"ChatRoom"
-			]
-		},
-		{
-			"tag": "v3",
-			"deleted_classes": [
-				"Counter"
-			]
-		}
 	]
 }
