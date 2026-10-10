@@ -4,6 +4,8 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy --minify",
+		"db:local": "wrangler d1 migrations apply workers-api --local",
+		"db:remote": "wrangler d1 migrations apply workers-api --remote",
 		"cf-typegen": "wrangler types types/worker-configuration.d.ts --env-interface CloudflareBindings"
 	},
 	"dependencies": {

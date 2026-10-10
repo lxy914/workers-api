@@ -60,7 +60,11 @@ post.post('/', async (c) => {
     }
     try{
         const now = Date.now()
-        await c.env.DB.prepare(`insert into t_post (title, body, create_time, update_time, user_id) values (?,?,?,?,?)`).bind(param.title,param.body,now,now,c.get('uid')).run()
+        // 文章与全文索引在同一事务内写入（batch）；索引维护方式见 migrations/0001_init.sql 说明
+        await c.env.DB.batch([
+            c.env.DB.prepare(`insert into t_post (title, body, create_time, update_time, user_id) values (?,?,?,?,?)`).bind(param.title,param.body,now,now,c.get('uid')),
+            c.env.DB.prepare(`insert into t_post_fts (rowid, title, body) values (last_insert_rowid(),?,?)`).bind(param.title,param.body),
+        ])
         return c.json({ code: 200, msg: "操作成功" })
     }catch(e){
         console.error('insert post error:', e)
@@ -74,16 +78,23 @@ post.put('/:id', owner_or_admin, async (c) => {
     if (!param.title || !param.body) {
         return c.json({ code: 500, msg: 'title或body参数不能为空' })
     }
-    const result = await c.env.DB.prepare(`update t_post set title = ?,body = ?,update_time = ? where id = ?`).bind(param.title,param.body,Date.now(),id).run()
-    if (result.meta.changes === 0) {
+    // 正文与索引在同一事务内更新；contentless-delete 表 UPDATE 必须覆盖全部列
+    const results = await c.env.DB.batch([
+        c.env.DB.prepare(`update t_post set title = ?,body = ?,update_time = ? where id = ?`).bind(param.title,param.body,Date.now(),id),
+        c.env.DB.prepare(`update t_post_fts set title = ?, body = ? where rowid = ?`).bind(param.title,param.body,id),
+    ])
+    if (results[0].meta.changes === 0) {
         return c.json({ code: 500, msg: "文章不存在" })
     }
     return c.json({ code: 200, msg: "操作成功" })
 })
 post.delete('/:id', owner_or_admin, async (c) => {
     const id = c.req.param('id')
-    const result = await c.env.DB.prepare(`delete from t_post where id = ?`).bind(id).run()
-    if (result.meta.changes === 0) {
+    const results = await c.env.DB.batch([
+        c.env.DB.prepare(`delete from t_post where id = ?`).bind(id),
+        c.env.DB.prepare(`delete from t_post_fts where rowid = ?`).bind(id),
+    ])
+    if (results[0].meta.changes === 0) {
         return c.json({ code: 500, msg: "文章不存在" })
     }
     return c.json({ code: 200, msg: "操作成功" })

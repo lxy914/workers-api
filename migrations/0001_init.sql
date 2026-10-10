@@ -1,17 +1,13 @@
 -- ============================================================
--- workers-api 数据库初始化 / 迁移脚本（幂等，可重复执行）
---
--- 用途：
---   1. 本地首次初始化：npx wrangler d1 execute workers-api --local --file=init.sql
---   2. 生产环境迁移建表：npx wrangler d1 execute workers-api --remote --file=init.sql
+-- 0001_init —— workers-api 数据库基线迁移
 --
 -- 说明：
---   - 建表使用 IF NOT EXISTS，种子数据使用 INSERT OR IGNORE，
---     重复执行不会删除或覆盖已有数据，生产环境可安全执行
---   - 如需本地重置数据库（清空全部数据），先手动执行：
---     drop table if exists t_login_fail;
---     drop table if exists t_post;
---     drop table if exists t_user;
+--   - 本文件是接入 wrangler d1 migrations 时的基线（全幂等，可安全重跑）
+--   - 本地应用：npm run db:local    生产应用：npm run db:remote
+--   - 已应用的迁移文件不可修改（账本有记录不会重跑）；
+--     后续结构变更请执行：npx wrangler d1 migrations create workers-api <变更名>
+--   - ⚠️ 远程执行限制：D1 服务端按分号拆分多语句，触发器必需的
+--     BEGIN...END 会被拆断报 incomplete input —— 迁移文件中禁止写触发器
 -- ============================================================
 
 -- 用户表
@@ -56,36 +52,32 @@ create table if not exists t_login_fail (
 create index if not exists idx_login_fail_ip_time on t_login_fail(ip, fail_time);
 
 -- ============================================================
--- 文章全文索引（FTS5）
+-- 文章全文索引（FTS5，contentless-delete 模式，应用层维护）
 --
 -- 用途：/api/post?keyword= 搜索接口，支持标题+正文全文搜索
 -- 说明：
---   - 使用 external content 表（content='t_post'），不冗余存储原文
+--   - content='' + contentless_delete=1：索引不存原文（正文由 t_post join
+--     获取），支持单语句 INSERT / UPDATE / DELETE 直接维护索引
+--   - ⚠️ 索引由应用层维护：src/post.ts 的增删改接口用 D1 batch 与正文同事务
+--     更新索引。不使用数据库触发器 —— D1 远程按分号拆分多语句，触发器必需
+--     的 BEGIN...END 会被拆断（incomplete input），无法经由迁移执行；
+--     而应用层维护 + contentless-delete 恰好全部是单语句，可正常迁移
 --   - trigram 分词：按 3 字符子串切 token，支持中英文任意子串匹配
 --     （1-2 字关键词由接口层 LIKE 兜底，trigram 无法匹配短词）
---   - 触发器自动同步增删改，已有数据通过 rebuild 回填
---   - 幂等：重复执行仅重建索引，不产生副作用
+--   - 幂等：先删旧触发器与旧表再重建（兼容 external content 旧模式），
+--     回填全量数据；搜索查询按 rowid join t_post、bm25 排序不受影响
 -- ============================================================
+drop trigger if exists t_post_fts_ai;
+drop trigger if exists t_post_fts_ad;
+drop trigger if exists t_post_fts_au;
+drop table if exists t_post_fts;
+
 create virtual table if not exists t_post_fts using fts5(
   title, body,
-  content='t_post',
-  content_rowid='id',
+  content='',
+  contentless_delete=1,
   tokenize='trigram'
 );
 
--- 新增文章时同步索引
-create trigger if not exists t_post_fts_ai after insert on t_post begin
-  insert into t_post_fts(rowid, title, body) values (new.id, new.title, new.body);
-end;
--- 删除文章时同步索引
-create trigger if not exists t_post_fts_ad after delete on t_post begin
-  insert into t_post_fts(t_post_fts, rowid, title, body) values('delete', old.id, old.title, old.body);
-end;
--- 更新文章时同步索引（先删旧索引再插新索引）
-create trigger if not exists t_post_fts_au after update on t_post begin
-  insert into t_post_fts(t_post_fts, rowid, title, body) values('delete', old.id, old.title, old.body);
-  insert into t_post_fts(rowid, title, body) values (new.id, new.title, new.body);
-end;
-
--- 回填已有数据（rebuild 清空并重建整个索引；不能在事务内执行，wrangler 逐条提交无影响）
-insert into t_post_fts(t_post_fts) values('rebuild');
+-- 回填已有数据（空库插入 0 行，存量库全量重建索引）
+insert into t_post_fts(rowid, title, body) select id, title, body from t_post;
