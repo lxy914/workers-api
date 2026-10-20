@@ -5,6 +5,9 @@ type Variables = { role: string; uid: number }
 
 export const post = new Hono<{ Bindings: CloudflareBindings; Variables: Variables }>();
 
+// 列表查询字段：正文只返回摘要（列表预览单行展示）；全文由详情接口 GET /:id 返回
+const list_columns = "p.id, p.title, substr(p.body, 1, 120) as excerpt, p.create_time, p.update_time, p.user_id, u.username as author"
+
 const owner_or_admin = createMiddleware<{ Bindings: CloudflareBindings; Variables: Variables }>(async (c, next) => {
   const id = c.req.param('id')
   const target = await c.env.DB.prepare("select user_id from t_post where id=?").bind(id).first()
@@ -22,25 +25,31 @@ const owner_or_admin = createMiddleware<{ Bindings: CloudflareBindings; Variable
 post.get("/", async (c) => {
     const keyword = (c.req.query('keyword') || '').trim()
     const uid = c.get('uid')
+    // 分页参数：page 从 1 开始，page_size 默认 20、上限 50
+    const page = Math.max(1, parseInt(c.req.query('page') || '1', 10) || 1)
+    const pageSize = Math.min(50, Math.max(1, parseInt(c.req.query('page_size') || '20', 10) || 20))
+    const offset = (page - 1) * pageSize
     let statement, params: (string | number)[]
     if (keyword) {
         if ([...keyword].length >= 3) {
             // FTS5 trigram 全文搜索：整体包成短语查询保持子串语义，内嵌双引号转义防止 MATCH 语法报错
             const phrase = '"' + keyword.replace(/"/g, '""') + '"'
-            statement = "select p.*, u.username as author from t_post_fts f join t_post p on p.id = f.rowid left join t_user u on p.user_id = u.id where t_post_fts match ? and p.user_id = ? order by bm25(t_post_fts)"
-            params = [phrase, uid]
+            statement = `select ${list_columns} from t_post_fts f join t_post p on p.id = f.rowid left join t_user u on p.user_id = u.id where t_post_fts match ? and p.user_id = ? order by bm25(t_post_fts) limit ? offset ?`
+            params = [phrase, uid, pageSize + 1, offset]
         } else {
             // 1-2 字关键词 trigram 无法匹配（token 至少 3 字符），LIKE 兜底保持子串语义
             const like = "%" + keyword + "%"
-            statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where (p.title like ? or p.body like ?) and p.user_id = ? order by p.update_time desc"
-            params = [like, like, uid]
+            statement = `select ${list_columns} from t_post p left join t_user u on p.user_id = u.id where (p.title like ? or p.body like ?) and p.user_id = ? order by p.update_time desc limit ? offset ?`
+            params = [like, like, uid, pageSize + 1, offset]
         }
     } else {
-        statement = "select p.*, u.username as author from t_post p left join t_user u on p.user_id = u.id where p.user_id = ? order by p.update_time desc"
-        params = [uid]
+        statement = `select ${list_columns} from t_post p left join t_user u on p.user_id = u.id where p.user_id = ? order by p.update_time desc limit ? offset ?`
+        params = [uid, pageSize + 1, offset]
     }
     const { results } = await c.env.DB.prepare(statement).bind(...params).all()
-    return c.json({ code: 200, msg: "操作成功", data: results })
+    // 多取一条判断是否还有下一页，避免额外的 count 查询
+    const hasMore = results.length > pageSize
+    return c.json({ code: 200, msg: "操作成功", data: hasMore ? results.slice(0, pageSize) : results, has_more: hasMore })
 })
 post.get('/:id', async (c) => {
     const id = c.req.param('id')
@@ -61,11 +70,12 @@ post.post('/', async (c) => {
     try{
         const now = Date.now()
         // 文章与全文索引在同一事务内写入（batch）；索引维护方式见 migrations/0001_init.sql 说明
-        await c.env.DB.batch([
+        const results = await c.env.DB.batch([
             c.env.DB.prepare(`insert into t_post (title, body, create_time, update_time, user_id) values (?,?,?,?,?)`).bind(param.title,param.body,now,now,c.get('uid')),
             c.env.DB.prepare(`insert into t_post_fts (rowid, title, body) values (last_insert_rowid(),?,?)`).bind(param.title,param.body),
         ])
-        return c.json({ code: 200, msg: "操作成功" })
+        // 返回新 id：前端据此定位新笔记，无需重新拉列表
+        return c.json({ code: 200, msg: "操作成功", data: { id: results[0].meta.last_row_id, create_time: now, update_time: now } })
     }catch(e){
         console.error('insert post error:', e)
         return c.json({ code: 500, msg: "操作失败，请稍后重试" })

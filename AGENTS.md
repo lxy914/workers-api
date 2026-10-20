@@ -55,9 +55,9 @@
 ### 文章 (`/api/post`) — 全部需 JWT
 | 方法 | 路径 | 权限 | 说明 |
 |------|------|------|------|
-| GET | `/api/post` | JWT | 文章列表（仅自己的文章），支持 `?keyword=` 全文搜索（标题+正文） |
-| GET | `/api/post/:id` | JWT | 文章详情（仅自己的文章） |
-| POST | `/api/post` | JWT | 创建文章 |
+| GET | `/api/post` | JWT | 文章列表（仅自己的文章），分页 `page`/`page_size`（默认 20，上限 50），返回 `has_more`；列表仅含摘要 `excerpt`，正文全文见详情接口；支持 `?keyword=` 全文搜索（标题+正文） |
+| GET | `/api/post/:id` | JWT | 文章详情（仅自己的文章，返回正文全文 `body`） |
+| POST | `/api/post` | JWT | 创建文章，返回新文章 `data.id` |
 | PUT | `/api/post/:id` | 作者/管理员 | 更新文章 |
 | DELETE | `/api/post/:id` | 作者/管理员 | 删除文章 |
 
@@ -81,6 +81,8 @@
 | create_time | INTEGER | 创建时间戳 |
 | update_time | INTEGER | 更新时间戳 |
 | user_id | INTEGER | 作者ID (关联 t_user.id) |
+
+索引：`idx_post_user_update(user_id, update_time)`（列表分页过滤 + 排序，迁移 0002）
 
 ### t_post_fts（全文索引）
 | 说明 | 内容 |
