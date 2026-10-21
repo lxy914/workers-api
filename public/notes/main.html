@@ -753,7 +753,7 @@
       </button>
 
       <div class="list-area">
-        <o-fill :value="noteGroups">
+        <o-fill :value="noteGroups" fill-key="key">
           <div class="note-group">
             <button class="group-head" on:click="$host.toggleGroup($data.key)" attr:aria-expanded="!$host.isGroupCollapsed($data.key)">
               <span class="group-title">{{$data.key}}</span>
@@ -763,7 +763,7 @@
               </svg>
             </button>
             <o-if :value="!$host.isGroupCollapsed($data.key)">
-              <o-fill :value="$data.items">
+              <o-fill :value="$data.items" fill-key="id">
                 <div class="note-item" class:active="$data.id === $host.currentId" on:click="$host.openNote($data.id)">
                   <div class="note-item-title">{{$data.title || '无标题'}}</div>
                   <div class="note-item-meta">{{$host.formatTime($data.updateTime)}}</div>
@@ -953,6 +953,9 @@
             try {
               const result = await store.getMyNotes(this.searchText.trim(), 1);
               if (seq !== this._listSeq) return; // 期间已有新的刷新（如搜索继续输入），丢弃旧响应
+              // 搜索/刷新后回到列表顶部（键控复用后不会再因 DOM 重建自动归零）
+              const listArea = this.ele.shadowRoot.querySelector(".list-area");
+              if (listArea) listArea.scrollTop = 0;
               this.page = 1;
               this.hasMore = result.hasMore;
               this.noteList = result.list;
