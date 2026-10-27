@@ -6,6 +6,11 @@ interface __BaseEnv_CloudflareBindings {
 	ASSETS: Fetcher;
 	jwt_secret: string;
 	open_register: string;
+	imgbed_url: string;
+	imgbed_channel: string;
+	imgbed_channel_name: string;
+	imgbed_token: string;
+	imgbed_auth_code: string; // 代码支持但默认未配置；`npm run cf-typegen` 会移除本行，重新生成后需手动补回
 }
 declare namespace Cloudflare {
 	interface GlobalProps {

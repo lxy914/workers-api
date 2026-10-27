@@ -21,14 +21,15 @@
 │   ├── index.ts              # Hono 应用入口：路由注册、中间件绑定
 │   ├── user.ts               # 用户模块：登录/注册/me + jwt_verify 中间件
 │   ├── post.ts               # 文章模块：CRUD + owner_or_admin 权限中间件
-│   └── auth.ts               # PBKDF2 密码哈希/验证工具函数
+│   ├── auth.ts               # PBKDF2 密码哈希/验证工具函数
+│   └── upload.ts             # 图片上传：代理转发到 CloudFlare ImgBed 图床
 ├── public/                   # 前端静态资源 (通过 ASSETS binding 托管)
 │   ├── index.html            # 入口跳转页：统一跳转 /notes
 │   └── notes/                # 墨记笔记应用 (ofa.js)
 │       ├── index.html        # 应用入口（加载 ofa.js / marked CDN）
 │       ├── auth.html         # 登录/注册页
 │       ├── main.html         # 主界面：列表 + Markdown 编辑器
-│       ├── store.js          # 数据层：对接 /api/post、token 管理
+│       ├── store.js          # 数据层：对接 /api/post、/api/upload、token 管理
 │       └── app-config.js     # 路由配置
 ├── types/                    # TypeScript 类型定义
 │   └── worker-configuration.d.ts
@@ -60,6 +61,14 @@
 | POST | `/api/post` | JWT | 创建文章，返回新文章 `data.id` |
 | PUT | `/api/post/:id` | 作者/管理员 | 更新文章 |
 | DELETE | `/api/post/:id` | 作者/管理员 | 删除文章 |
+
+### 图片 (`/api/upload`) — 需 JWT
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/upload` | `multipart/form-data` 字段 `file`，后端转发到 CloudFlare ImgBed 图床，返回 `data.url` 直链；仅接受 `image/*`，单图上限 8MB |
+
+- 图床凭据（`imgbed_token` / `imgbed_auth_code`）只存服务端，浏览器不可见
+- 前端上传前自动压缩：超过 1MB 或长边超过 1920px 的位图转 WebP（质量 0.85），GIF/SVG 原样上传
 
 ## 数据库 (D1)
 
@@ -128,7 +137,7 @@
 ## 本地开发
 
 ```bash
-cp .dev.vars.example .dev.vars   # 配置 jwt_secret
+cp .dev.vars.example .dev.vars   # 配置 jwt_secret、imgbed_token
 npm run db:local                  # 应用数据库迁移（本地）
 npm run dev                       # 启动本地开发服务器 (http://localhost:8787)
 ```
@@ -143,5 +152,7 @@ npm run dev                       # 启动本地开发服务器 (http://localhos
 ### wrangler.jsonc
 - `DB`: D1 数据库绑定
 - `durable_objects`: bindings 已清空（聊天功能已下线），migrations 保留历史 v1-v4：v4 为 `deleted_classes: [ChatRoom]`，用于回收生产环境存量 ChatRoom 实例（直接删除绑定会报 10064）
-- `open_register`: 注册开关环境变量
+- `open_register`: 注册开关，字符串 `"0"`/`"1"`（代码判断 `String(c.env.open_register) !== '1'` 即拒绝注册）；当前为 `"0"`，注册关闭
 - `jwt_secret`: JWT 签名密钥（敏感信息，本地用 `.dev.vars`，生产用 `wrangler secret put`）
+- `imgbed_url` / `imgbed_channel` / `imgbed_channel_name`: 图床地址 `https://cfbed.325641.xyz`、渠道类型 `huggingface`（对应 `uploadChannel`）、渠道名 `hf`（对应 `channelName`）。**不要省略渠道参数**：不指定时图床会逐渠道尝试，经 Worker 中转耗时从 4-8 秒恶化到 12-30 秒甚至触发 30 秒超时
+- `imgbed_token`: 图床 API Token（需 upload 权限，走 `Authorization: Bearer`；敏感信息，本地用 `.dev.vars`，生产用 `wrangler secret put`）；若改用上传认证码则配 `imgbed_auth_code`（走 `authCode` 查询参数）；两者都未配置时 `/api/upload` 返回“图片上传服务未配置”

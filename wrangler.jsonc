@@ -15,7 +15,10 @@
 		"enabled": true
 	},
 	"vars": {
-		"open_register": 0
+		"open_register": "0",
+		"imgbed_url": "https://cfbed.325641.xyz",
+		"imgbed_channel": "huggingface",
+		"imgbed_channel_name": "hf"
 	},
 	"d1_databases": [
 		{

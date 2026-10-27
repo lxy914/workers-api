@@ -127,6 +127,27 @@ export async function deleteNote(id) {
   return true;
 }
 
+// ==================== 图片 ====================
+
+// 上传图片到服务端代理的图床，返回可直接引用的 URL
+// 不手动设置 Content-Type：multipart 的 boundary 需要浏览器自动生成
+export async function uploadImage(file) {
+  const form = new FormData();
+  form.append("file", file);
+  const headers = {};
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) headers["token"] = token;
+  const response = await fetch("/api/upload", { method: "POST", headers, body: form });
+  // 与 api() 一致：token 自动续期
+  const newToken = response.headers.get("x-new-token");
+  if (newToken) {
+    localStorage.setItem(TOKEN_KEY, newToken);
+  }
+  const res = await response.json();
+  if (res.code !== 200 || !res.data?.url) throw new Error(res.msg || "图片上传失败");
+  return res.data.url;
+}
+
 export function formatTime(ts) {
   const d = new Date(ts);
   const pad = (n) => String(n).padStart(2, "0");
